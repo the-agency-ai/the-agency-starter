@@ -10,6 +10,15 @@
 
 set -e
 
+# Tool version
+TOOL_VERSION="1.0.0-20260109-000001"
+
+# Version check
+if [[ "${1:-}" == "--version" || "${1:-}" == "-v" ]]; then
+    echo "new-project $TOOL_VERSION"
+    exit 0
+fi
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -129,10 +138,10 @@ chmod +x tools/* 2>/dev/null || true
 # Configure principal with current user
 SYSTEM_USER=$(whoami)
 echo "Configuring for user: $SYSTEM_USER"
-if [ -f "claude/config.yaml" ]; then
-    sed -i.bak "s/your_username: YourName/$SYSTEM_USER: $SYSTEM_USER/" claude/config.yaml 2>/dev/null || \
-    sed -i '' "s/your_username: YourName/$SYSTEM_USER: $SYSTEM_USER/" claude/config.yaml
-    rm -f claude/config.yaml.bak
+if [ -f "claude/config/agency.yaml" ]; then
+    sed -i.bak "s/your_username: YourName/$SYSTEM_USER: $SYSTEM_USER/" claude/config/agency.yaml 2>/dev/null || \
+    sed -i '' "s/your_username: YourName/$SYSTEM_USER: $SYSTEM_USER/" claude/config/agency.yaml
+    rm -f claude/config/agency.yaml.bak
 fi
 
 # Success

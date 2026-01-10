@@ -48,32 +48,6 @@ Agents communicate via:
 - `./tools/post-news` / `./tools/read-news` - Broadcast updates
 - `./tools/add-nit` - Flag issues for later
 
-## Philosophy: Tools Over Instructions
-
-**Make doing it the right way, the fast way.**
-
-Every repeated decision is encoded in a tool. When you need to:
-- Know the time → `./tools/now` (don't reason about timezone)
-- Know your identity → `./tools/whoami` (don't search for config)
-- Create an instruction → `./tools/capture-instruction` (don't figure out naming)
-- Check quality → `./tools/pre-commit-check` (don't remember the steps)
-
-### Why Tools?
-1. **You don't have to think** — the tool encapsulates the decision
-2. **Consistency is guaranteed** — the tool always does it right
-3. **Speed** — one call vs. figuring it out
-
-### When to Reason Instead
-- Novel problems (no pattern yet)
-- One-time tasks (won't recur)
-- Creative work (exploration, design)
-
-### Finding Tools
-- `./tools/find-tool "keyword"` — search by keyword
-- `./tools/how "intent"` — search by what you want to do
-
-For the full philosophy, see `PHILOSOPHY.md`.
-
 ## Directory Structure
 
 ```
@@ -137,6 +111,34 @@ Generated with [Claude Code](https://claude.com/claude-code)
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
+### API Design (Explicit Operations)
+All API endpoints use explicit operation names. Do NOT rely on HTTP verb semantics.
+
+**Pattern:**
+```
+POST /api/resource/create      # Create
+GET  /api/resource/list        # List with filters
+GET  /api/resource/get/:id     # Get single
+POST /api/resource/update/:id  # Update
+POST /api/resource/delete/:id  # Delete
+POST /api/resource/action/:id  # Specific actions (approve, archive, etc.)
+GET  /api/resource/stats       # Statistics
+```
+
+**Why explicit operations:**
+- Self-documenting URLs
+- Clear intent without needing to know HTTP semantics
+- Easier to grep/search for operations
+- Consistent across all services
+
+**Anti-patterns (do NOT use):**
+```
+POST   /api/resource           # Ambiguous - is this create?
+PATCH  /api/resource/:id       # Relies on verb semantics
+DELETE /api/resource/:id       # Relies on verb semantics
+GET    /api/resource/:id       # Ambiguous - use /get/:id
+```
+
 ### Quality Gates
 Pre-commit hooks enforce:
 1. Code formatting
@@ -144,6 +146,88 @@ Pre-commit hooks enforce:
 3. Type checking
 4. Unit tests
 5. Code review checks
+6. API design patterns
+
+## Work Items
+
+Work in The Agency is tracked through REQUEST files. Each REQUEST goes through defined stages.
+
+### Work Item Types
+- `REQUEST-principal-XXXX` - Work requested by a principal
+- `BUG-XXXX` - Bug fixes (can be addressed individually or via REQUEST)
+- `ADHOC-` - Agent-initiated work (logged in ADHOC-WORKLOG.md)
+
+### REQUEST Stages
+```
+impl     → Implementation complete, tested locally
+review   → Code review complete, fixes applied
+tests    → Test review complete, improvements applied
+complete → All phases done, ready for release
+```
+
+### Tagging Convention
+```bash
+./tools/tag REQUEST-jordan-0017 impl      # REQUEST-jordan-0017-impl
+./tools/tag REQUEST-jordan-0017 review    # REQUEST-jordan-0017-review
+./tools/tag REQUEST-jordan-0017 tests     # REQUEST-jordan-0017-tests
+./tools/tag REQUEST-jordan-0017 complete  # REQUEST-jordan-0017-complete
+./tools/tag release 0.6.0                 # v0.6.0
+```
+
+### Tools
+```bash
+./tools/tag REQUEST-xxx stage   # Create stage tag
+./tools/commit "message" ID     # Create formatted commit
+./tools/release 0.7.0           # Cut a release
+```
+
+## Development Workflow
+
+**The working tree should ALWAYS be clean.**
+
+Every feature or fix follows this workflow:
+
+### 1. Implement → tag `-impl`
+- Do the work
+- Test locally (run tests, verify functionality)
+- Commit and tag with `./tools/tag REQUEST-xxx impl`
+
+### 2. Code Review → tag `-review`
+- Self-review + request other agent reviews
+- Consolidate findings into a single list of changes
+- Apply the changes
+- Commit and tag with `./tools/tag REQUEST-xxx review`
+
+### 3. Test Review → tag `-tests`
+- Self-review + request other agent reviews of test coverage
+- Consolidate findings into a single list of test improvements
+- Apply the test changes
+- Commit and tag with `./tools/tag REQUEST-xxx tests`
+
+### 4. Release → tag `-complete` + `vX.Y.Z`
+- Tag REQUEST complete: `./tools/tag REQUEST-xxx complete`
+- Cut release: `./tools/release 0.7.0 --push --github`
+
+### Workflow Summary
+```
+1. Do work
+2. Test locally
+3. Commit & tag (REQUEST-xxx-impl)
+4. Code review (self + agents) → consolidated changes
+5. Apply changes
+6. Commit & tag (REQUEST-xxx-review)
+7. Test review (self + agents) → consolidated test improvements
+8. Apply test changes
+9. Commit & tag (REQUEST-xxx-tests)
+10. Cut build/release (REQUEST-xxx-complete + vX.Y.Z)
+```
+
+### Key Principles
+- **Clean working tree**: Always commit before moving on
+- **Small commits**: Each commit should be a logical unit
+- **Tags for milestones**: Tag after each stage (impl, review, tests, complete)
+- **Collaborative review**: Multiple perspectives catch more issues
+- **Consolidated changes**: Don't apply changes piecemeal - gather all feedback first
 
 ## Starter Packs
 
