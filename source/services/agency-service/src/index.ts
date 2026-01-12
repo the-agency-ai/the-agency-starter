@@ -112,6 +112,11 @@ async function main() {
     });
   });
 
+  // Project root endpoint (for AgencyBench browser mode)
+  app.get('/api/config/project-root', (c) => {
+    return c.json({ projectRoot: config.projectRoot });
+  });
+
   // 404 handler
   app.notFound((c) => {
     return c.json({ error: 'Not Found', message: 'Endpoint not found' }, 404);

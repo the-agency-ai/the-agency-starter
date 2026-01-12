@@ -49,8 +49,19 @@ export async function getProjectRoot(): Promise<string> {
     return invoke('get_project_root');
   }
 
-  // Browser fallback
-  return '/Users/jdm/code/the-agency';
+  // Browser fallback - get from agency-service API
+  try {
+    const response = await fetch('http://localhost:3141/api/config/project-root');
+    if (response.ok) {
+      const data = await response.json();
+      return data.projectRoot;
+    }
+  } catch (e) {
+    console.warn('[Browser mode] Could not fetch project root from agency-service:', e);
+  }
+
+  // Final fallback if API unavailable
+  return process.cwd?.() || '.';
 }
 
 /**

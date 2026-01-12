@@ -25,7 +25,7 @@ A quick path resolution tool that finds files by partial name or type.
 ```bash
 # Find by partial name
 ./tools/resolve perplexity-2026-01-06-0826
-# Returns: /Users/jdm/Library/Mobile Documents/.../perplexity-2026-01-06-0826
+# Returns: ~/Library/Mobile Documents/.../perplexity-2026-01-06-0826
 
 # Find by type flag
 ./tools/resolve -r markups/feature-x      # In resources

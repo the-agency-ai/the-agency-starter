@@ -55,12 +55,11 @@ fn find_project_root() -> Option<String> {
         }
     }
 
-    // Fallback: check common locations
+    // Fallback: check common locations relative to $HOME
     let home = std::env::var("HOME").unwrap_or_default();
     let candidates = [
         format!("{}/code/the-agency", home),
         format!("{}/the-agency", home),
-        "/Users/jdm/code/the-agency".to_string(),
     ];
 
     for candidate in candidates {
