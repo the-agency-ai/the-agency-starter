@@ -1,17 +1,38 @@
 # Getting Started with The Agency
 
-A step-by-step guide to setting up your first multi-agent development environment.
+A comprehensive guide to setting up your multi-agent development environment.
 
-**Time to complete:** ~10 minutes
+**Time to complete:** ~15 minutes
+
+---
 
 ## Prerequisites
 
-**Required:**
-- [Claude Code](https://claude.ai/code) installed and working
-- Git
-- A project you want to AI-augment (or we'll create one)
+### Required: Claude Subscription
 
-**Recommended CLI Tools (macOS):**
+| Requirement | Options |
+|-------------|---------|
+| **Account** | Claude.ai Pro ($20/mo), Max ($100-200/mo), or Team |
+| **API Access** | Or Claude Console with pre-paid credits |
+
+### Required: System Requirements
+
+| Requirement | Details |
+|-------------|---------|
+| **OS** | macOS, Linux, or Windows (WSL recommended) |
+| **Node.js** | Version 18+ |
+| **Git** | For version control |
+| **Shell** | bash or zsh |
+
+### Required: Terminal Application
+
+| Platform | Recommendation |
+|----------|----------------|
+| **macOS** | iTerm2 (for named tabs, notifications) |
+| **Linux** | Any terminal with tab support |
+| **Windows** | Windows Terminal |
+
+### Recommended: CLI Tools (macOS)
 
 The Agency works best with these tools installed:
 
@@ -29,13 +50,51 @@ brew install yq fzf bat ripgrep
 | `gh` | GitHub operations (PRs, issues, releases) |
 | `tree` | Visualize project structure |
 | `yq` | Edit YAML configs programmatically |
-| `fzf` | Fuzzy search (try: `./tools/find-tool -l \| fzf`) |
+| `fzf` | Fuzzy search |
 | `bat` | Syntax-highlighted file viewing |
 | `rg` | Lightning-fast code search |
 
 Or run after installation: `./tools/setup-mac --all`
 
-## Step 1: Fork and Clone
+---
+
+## Step 1: Install Claude Code
+
+### macOS / Linux
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+### Windows (PowerShell)
+
+```powershell
+irm https://claude.ai/install.ps1 | iex
+```
+
+### Verify Installation
+
+```bash
+claude --version
+```
+
+### PATH Setup (if needed)
+
+If `claude` command not found, add to your shell profile (`~/.bashrc` or `~/.zshrc`):
+
+```bash
+export PATH="$HOME/.claude/bin:$PATH"
+```
+
+Then reload:
+
+```bash
+source ~/.zshrc  # or ~/.bashrc
+```
+
+---
+
+## Step 2: Fork and Clone
 
 ```bash
 # Fork on GitHub first, then:
@@ -46,9 +105,11 @@ cd my-project
 chmod +x tools/*
 ```
 
-## Step 2: Configure Your Identity
+---
 
-Edit `claude/config.yaml` to map your system username to your principal name:
+## Step 3: Configure Your Identity
+
+Edit `claude/config/agency.yaml` to map your system username to your principal name:
 
 ```yaml
 principals:
@@ -68,7 +129,9 @@ Test it:
 # Should output: YourName
 ```
 
-## Step 3: Meet Your Housekeeping Agent
+---
+
+## Step 4: Meet Your Housekeeping Agent
 
 The housekeeping agent is your guide. Launch it:
 
@@ -83,7 +146,9 @@ When it starts, it will:
 
 **Try saying:** "I'm building a Next.js web app. Help me set up The Agency for it."
 
-## Step 4: Create Your First Workstream
+---
+
+## Step 5: Create Your First Workstream
 
 Workstreams organize related work. Have housekeeping create one, or do it yourself:
 
@@ -97,7 +162,9 @@ claude/workstreams/web/
   KNOWLEDGE.md    # Shared knowledge for this workstream
 ```
 
-## Step 5: Create Your First Agent
+---
+
+## Step 6: Create Your First Agent
 
 Agents are specialized Claude instances. Create one for your web work:
 
@@ -134,7 +201,9 @@ Edit `claude/agents/web/agent.md` to describe your agent's role:
 - Optimize performance
 ```
 
-## Step 6: Launch Your Agent
+---
+
+## Step 7: Launch Your Agent
 
 ```bash
 ./tools/myclaude web web
@@ -145,61 +214,176 @@ Your agent will:
 2. Check for any active instructions
 3. Ask what you want to work on
 
-## Step 7: Your First Instruction
+---
 
-As a principal, you direct work via instructions. Create one:
+## Essential Tools
 
-```bash
-./tools/capture-instruction -t "Add dark mode toggle" "Add a dark mode toggle to the settings page. It should persist the preference in localStorage."
+### The `!` Shortcut
+
+In Claude Code, prefix any command with `!` to run it in bash mode:
+
+```
+> !git status
+> !./tools/now
+> !ls -la
 ```
 
-This creates an instruction file that your web agent will see at session start.
+### Agency Tools
 
-## Step 8: Execute and Complete
+| Tool | What It Does |
+|------|--------------|
+| `./tools/now` | Current timestamp |
+| `./tools/whoami` | Your principal identity |
+| `./tools/agentname` | Current agent name |
+| `./tools/workstream` | Current workstream |
 
-Have your web agent implement the feature:
+### Session Management
 
-1. Agent sees the instruction at session start
-2. Agent implements the feature
-3. Agent marks instruction complete:
-   ```bash
-   ./tools/complete-instruction INSTR-0001 "Added dark mode toggle with localStorage persistence. See src/components/ThemeToggle.tsx"
-   ```
+| Tool | What It Does |
+|------|--------------|
+| `./tools/hello` | Start session, get context |
+| `./tools/welcomeback` | Resume after break |
+| `./tools/backup-session` | Save session state |
+| `./tools/restore` | Restore agent context |
 
-## Step 9: Collaboration (Optional)
+### Quality & Deployment
 
-If you have multiple agents, they can collaborate:
+| Tool | What It Does |
+|------|--------------|
+| `./tools/pre-commit-check` | Run all quality checks |
+| `./tools/run-unit-tests` | Run test suite |
+| `./tools/code-review` | AI code review |
+| `./tools/sync` | Push to remote |
 
-```bash
-# From web agent, request help from api agent
-./tools/collaborate api "Need API endpoint for theme preference" "We need a GET/POST /api/user/preferences endpoint to sync theme across devices"
+### Collaboration
+
+| Tool | What It Does |
+|------|--------------|
+| `./tools/collaborate` | Request help from another agent |
+| `./tools/post-news` | Broadcast to all agents |
+| `./tools/read-news` | Read broadcasts |
+| `./tools/add-nit` | Log a small issue for later |
+
+### Discovery
+
+| Tool | What It Does |
+|------|--------------|
+| `./tools/list-tools` | List all available tools |
+| `./tools/find-tool "keyword"` | Search for a tool |
+
+---
+
+## Claude Code Basics
+
+### Keyboard Shortcuts
+
+| Shortcut | What It Does |
+|----------|--------------|
+| `!` | Bash mode prefix |
+| `@` | Mention files/folders |
+| `#` | Add to CLAUDE.md |
+| `Esc` | Interrupt Claude |
+| `Esc + Esc` | Rewind to checkpoint |
+| `/` | Access slash commands |
+| `Tab` | Command completion |
+| `↑` | Previous command |
+
+### Essential Slash Commands
+
+| Command | What It Does |
+|---------|--------------|
+| `/help` | Show all commands |
+| `/clear` | Clear conversation (use often!) |
+| `/model` | Change AI model |
+| `/compact` | Summarize long conversation |
+| `/rewind` | Undo changes |
+| `/permissions` | Manage tool permissions |
+
+### Models
+
+| Model | When to Use |
+|-------|-------------|
+| Opus | Complex architecture, security |
+| Sonnet | Implementation, refactoring (default) |
+| Haiku | Quick searches, simple edits |
+
+Switch with: `/model opus`, `/model sonnet`, `/model haiku`
+
+---
+
+## What You Get With The Agency
+
+### Named Terminal Tabs
+
+Each agent session runs in a clearly labeled tab:
+
+```
+┌──────────────────┬──────────────────┬──────────────────┐
+│ housekeeping     │ web              │ api              │
+│ (housekeeping)   │ (web)            │ (api)            │
+└──────────────────┴──────────────────┴──────────────────┘
 ```
 
-Launch the api agent to respond:
-```bash
-./tools/myclaude api api
-# Agent sees collaboration request and handles it
-```
-
-## Step 10: Quality Gates
-
-Before pushing, run quality checks:
+### Persistent Agent Identity
 
 ```bash
-./tools/pre-commit-check
+$ ./tools/whoami
+YourName
+
+$ ./tools/agentname
+housekeeping
+
+$ ./tools/workstream
+housekeeping
 ```
 
-This runs:
+### Session State
+
+Your agent knows:
+- What it was working on (ADHOC-WORKLOG.md)
+- Active instructions from principals
+- Collaboration requests from other agents
+- Recent news and updates
+
+### Structured Work Tracking
+
+```
+claude/
+├── agents/
+│   └── housekeeping/
+│       ├── agent.md          # Agent definition
+│       ├── WORKLOG.md         # Sprint work
+│       ├── ADHOC-WORKLOG.md   # Ad-hoc tracking
+│       └── KNOWLEDGE.md       # Learned context
+├── principals/
+│   └── YourName/
+│       ├── instructions/      # Tasks from principal
+│       └── artifacts/         # Deliverables
+└── workstreams/
+    └── web/
+        └── KNOWLEDGE.md       # Shared knowledge
+```
+
+### Quality Gates
+
+Pre-commit checks run automatically:
 1. Formatting
 2. Linting
 3. Type checking
 4. Unit tests
 5. Code review
 
-Push using the sync tool (runs quality gates automatically):
-```bash
-./tools/sync
-```
+### Versus Going Solo
+
+| Capability | Vanilla Claude Code | The Agency |
+|------------|---------------------|------------|
+| Terminal naming | Manual | Automatic |
+| Agent identity | None | Built-in |
+| Session persistence | Basic `/resume` | Full state restoration |
+| Work tracking | None | WORKLOG, ADHOC, instructions |
+| Quality gates | Manual | Automated 5-step |
+| Collaboration | None | Full agent-to-agent |
+| Principal instructions | None | Structured system |
 
 ---
 
@@ -217,21 +401,9 @@ As your project grows, add specialized agents:
 
 For larger initiatives:
 ```bash
-./tools/create-epic 1        # Create epic001
+./tools/create-epic 1          # Create epic001
 ./tools/create-sprint web 1 1  # Create web/epic001/sprint001
 ```
-
-### Apply a Starter Pack
-
-If you're using a specific framework:
-```bash
-# Copy Next.js conventions
-cp -r claude/starter-packs/nextjs/* .
-```
-
-### Set Up Claude Desktop Integration
-
-See `claude/claude-desktop/` for MCP server setup that lets Claude Desktop coordinate your agents.
 
 ### Check the Docs
 
@@ -276,8 +448,9 @@ claude/
   workstreams/{name}/   # Work organization
   principals/{name}/    # Human stakeholders
   docs/                 # Guides and reference
-  config.yaml           # Project configuration
+  config/agency.yaml    # Project configuration
 tools/                  # CLI tools
+source/                 # Apps, services, packages
 ```
 
 ### Naming Conventions
@@ -293,40 +466,68 @@ tools/                  # CLI tools
 
 ## Troubleshooting
 
+### "claude: command not found"
+
+Add to PATH:
+```bash
+export PATH="$HOME/.claude/bin:$PATH"
+source ~/.zshrc
+```
+
 ### "Permission denied" on tools
+
 ```bash
 chmod +x tools/*
 ```
 
+### Agent not picking up context
+
+```bash
+./tools/restore
+```
+
 ### Agent doesn't see my instruction
+
 - Check the instruction's **To:** field matches `{workstream}/{agent}`
 - Run `./tools/show-instructions` to verify
 
+### Terminal tab not renaming
+
+Ensure you're using iTerm2 (macOS) or a terminal that supports escape sequences for tab naming.
+
 ### Git push fails
+
 - Use `./tools/sync` instead of `git push` directly
 - Check for merge conflicts: `git status`
-
-### Tools not found
-- Make sure you're in the project root
-- Check tool exists: `ls tools/`
 
 ---
 
 ## Getting Help
 
 ### Ask Housekeeping
+
 Your housekeeping agent knows The Agency inside and out:
 ```bash
 ./tools/myclaude housekeeping housekeeping "How do I...?"
 ```
 
 ### Check Documentation
+
 - `CLAUDE.md` - Quick reference
 - `claude/docs/CONCEPTS.md` - All concepts explained
 - `claude/docs/guides/` - Specific workflows
 
 ### Report Issues
-https://github.com/jordandm/the-agency-starter/issues
+
+https://github.com/the-agency-ai/the-agency-starter/issues
+
+---
+
+## Sources
+
+- [Claude Code Product Page](https://claude.com/product/claude-code)
+- [Claude Code Best Practices](https://www.anthropic.com/engineering/claude-code-best-practices)
+- [Claude Code Documentation](https://code.claude.com/docs/en/overview)
 
 ---
 
