@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { readFile, writeFile, getProjectRoot } from '@/lib/tauri';
+import { readFile, writeFile, getProjectRoot, getPendingOpen } from '@/lib/tauri';
 
 interface TreeNode {
   name: string;
@@ -129,6 +129,22 @@ function DocBenchContent() {
   useEffect(() => {
     localStorage.setItem('agencybench-browse-root', browseRoot);
   }, [browseRoot]);
+
+  // Check for pending file to open from CLI
+  useEffect(() => {
+    async function checkPendingOpen() {
+      try {
+        const pending = await getPendingOpen();
+        if (pending?.file) {
+          console.log('[DocBench] Opening pending file:', pending.file);
+          setSelectedFile(pending.file);
+        }
+      } catch (err) {
+        console.error('[DocBench] Error checking pending open:', err);
+      }
+    }
+    checkPendingOpen();
+  }, []);
 
   // Load and save sidebar width
   useEffect(() => {
@@ -516,45 +532,83 @@ function DocBenchContent() {
     return () => document.removeEventListener('selectionchange', checkSelection);
   }, [isEditing]);
 
-  // Handle Insert > Comment from menu
+  // Handle Insert > Comment from menu - adds comment block after selected text
+  // Format: keeps original text, adds quoted selection + empty marker below
   const handleInsertCommentFromMenu = () => {
     setShowInsertMenu(false);
+
+    // Get principal name (use stored or default to 'user')
+    const principal = principalName.trim().toLowerCase() || 'user';
+    const emptyMarker = `[(${principal}) ]`;
+
+    // Check if we have selection data from Preview mode
+    const selData = selectionDataRef.current;
+
     if (isEditing && textareaRef.current) {
       const textarea = textareaRef.current;
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
+
       if (start !== end) {
+        // Has selection - insert comment block AFTER selection
         const selectedText = editContent.substring(start, end);
-        if (selectedText.trim()) {
-          selectionDataRef.current = { text: selectedText, start, end };
-          // Position popup in center of screen since we don't have click coordinates
-          setSelectionPopup({
-            x: window.innerWidth / 2 - 128,
-            y: window.innerHeight / 3,
-            text: selectedText,
-            start,
-            end,
-          });
-          setShowCommentForm(true);
-        }
+        const quotedLine = `[(${principal}) ${selectedText}]`;
+        const commentBlock = `\n${quotedLine}\n${emptyMarker}`;
+        const newContent = editContent.substring(0, end) + commentBlock + editContent.substring(end);
+        setEditContent(newContent);
+        setHasUnsavedChanges(true);
+
+        // Position cursor inside the empty marker (before the ])
+        setTimeout(() => {
+          textarea.focus();
+          const newPos = end + commentBlock.length - 1;
+          textarea.setSelectionRange(newPos, newPos);
+        }, 0);
+      } else {
+        // No selection - insert empty marker at cursor
+        const newContent = editContent.substring(0, start) + emptyMarker + editContent.substring(start);
+        setEditContent(newContent);
+        setHasUnsavedChanges(true);
+
+        setTimeout(() => {
+          textarea.focus();
+          const newPos = start + emptyMarker.length - 1;
+          textarea.setSelectionRange(newPos, newPos);
+        }, 0);
       }
+    } else if (selData && selData.text) {
+      // Preview mode with selection - insert comment block AFTER selection
+      const quotedLine = `[(${principal}) ${selData.text}]`;
+      const commentBlock = `\n${quotedLine}\n${emptyMarker}`;
+      const newContent = content.substring(0, selData.end) + commentBlock + content.substring(selData.end);
+
+      setIsEditing(true);
+      setEditContent(newContent);
+      setHasUnsavedChanges(true);
+      selectionDataRef.current = null;
+
+      // Position cursor inside the empty marker after edit mode activates
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const newPos = selData.end + commentBlock.length - 1;
+          textareaRef.current.setSelectionRange(newPos, newPos);
+        }
+      }, 100);
     } else {
-      const selection = window.getSelection();
-      const selectedText = selection?.toString().trim() || '';
-      if (selectedText) {
-        const start = content.indexOf(selectedText);
-        if (start !== -1) {
-          selectionDataRef.current = { text: selectedText, start, end: start + selectedText.length };
-          setSelectionPopup({
-            x: window.innerWidth / 2 - 128,
-            y: window.innerHeight / 3,
-            text: selectedText,
-            start,
-            end: start + selectedText.length,
-          });
-          setShowCommentForm(true);
+      // No selection - insert at end
+      setIsEditing(true);
+      const newContent = content + '\n' + emptyMarker;
+      setEditContent(newContent);
+      setHasUnsavedChanges(true);
+
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const newPos = newContent.length - 1;
+          textareaRef.current.setSelectionRange(newPos, newPos);
         }
-      }
+      }, 100);
     }
   };
 

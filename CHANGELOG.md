@@ -1,5 +1,11 @@
 # Changelog
 
+
+## [1.0.4] - 2026-01-12
+
+- Synced from the-agency
+- See GitHub release for details
+
 All notable changes to The Agency Starter will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),

@@ -168,6 +168,126 @@ describe('Bug Repository', () => {
       expect(page2.bugs.length).toBe(2);
       expect(page1.bugs[0].bugId).not.toBe(page2.bugs[0].bugId);
     });
+
+    test('should sort by summary ascending', async () => {
+      const { bugs } = await repo.list({ limit: 50, offset: 0, sortBy: 'summary', sortOrder: 'asc' });
+      expect(bugs.length).toBe(4);
+      expect(bugs[0].summary).toBe('A Fixed bug');
+      expect(bugs[1].summary).toBe('A Open bug');
+    });
+
+    test('should sort by status descending', async () => {
+      const { bugs } = await repo.list({ limit: 50, offset: 0, sortBy: 'status', sortOrder: 'desc' });
+      expect(bugs.length).toBe(4);
+      // 'Open' comes after 'Fixed' alphabetically descending
+      expect(bugs[0].status).toBe('Open');
+    });
+
+    test('should search in summary', async () => {
+      const { bugs, total } = await repo.list({ limit: 50, offset: 0, search: 'Fixed' });
+      expect(total).toBe(2);
+      expect(bugs.every(b => b.summary.includes('Fixed'))).toBe(true);
+    });
+
+    test('should search with special characters escaped', async () => {
+      // Create a bug with special chars in summary
+      const bugId = await repo.getNextBugId('special');
+      await repo.create(bugId, {
+        workstream: 'special',
+        summary: 'Bug with 100% coverage',
+        reporterType: 'agent',
+        reporterName: 'test',
+      });
+
+      const { bugs } = await repo.list({ limit: 50, offset: 0, search: '100%', workstream: 'special' });
+      expect(bugs.length).toBe(1);
+      expect(bugs[0].summary).toContain('100%');
+    });
+  });
+
+  describe('tags', () => {
+    test('should create bug with tags', async () => {
+      const bugId = await repo.getNextBugId('tags');
+      const bug = await repo.create(bugId, {
+        workstream: 'tags',
+        summary: 'Bug with tags',
+        reporterType: 'agent',
+        reporterName: 'test',
+        tags: ['ui', 'critical'],
+      });
+
+      expect(bug.tags).toEqual(['ui', 'critical']);
+    });
+
+    test('should update bug tags', async () => {
+      const bugId = await repo.getNextBugId('tags');
+      await repo.create(bugId, {
+        workstream: 'tags',
+        summary: 'Bug to update tags',
+        reporterType: 'agent',
+        reporterName: 'test',
+        tags: ['original'],
+      });
+
+      const updated = await repo.update(bugId, { tags: ['updated', 'new'] });
+      expect(updated!.tags).toEqual(['updated', 'new']);
+    });
+
+    test('should filter by single tag', async () => {
+      const bugId1 = await repo.getNextBugId('tagfilter');
+      await repo.create(bugId1, {
+        workstream: 'tagfilter',
+        summary: 'Bug 1',
+        reporterType: 'agent',
+        reporterName: 'test',
+        tags: ['frontend', 'ui'],
+      });
+
+      const bugId2 = await repo.getNextBugId('tagfilter');
+      await repo.create(bugId2, {
+        workstream: 'tagfilter',
+        summary: 'Bug 2',
+        reporterType: 'agent',
+        reporterName: 'test',
+        tags: ['backend'],
+      });
+
+      const { bugs } = await repo.list({ limit: 50, offset: 0, workstream: 'tagfilter', tags: 'frontend' });
+      expect(bugs.length).toBe(1);
+      expect(bugs[0].tags).toContain('frontend');
+    });
+
+    test('should filter by multiple tags (OR)', async () => {
+      const bugId1 = await repo.getNextBugId('multitag');
+      await repo.create(bugId1, {
+        workstream: 'multitag',
+        summary: 'Bug 1',
+        reporterType: 'agent',
+        reporterName: 'test',
+        tags: ['frontend'],
+      });
+
+      const bugId2 = await repo.getNextBugId('multitag');
+      await repo.create(bugId2, {
+        workstream: 'multitag',
+        summary: 'Bug 2',
+        reporterType: 'agent',
+        reporterName: 'test',
+        tags: ['backend'],
+      });
+
+      const bugId3 = await repo.getNextBugId('multitag');
+      await repo.create(bugId3, {
+        workstream: 'multitag',
+        summary: 'Bug 3',
+        reporterType: 'agent',
+        reporterName: 'test',
+        tags: ['docs'],
+      });
+
+      const { bugs } = await repo.list({ limit: 50, offset: 0, workstream: 'multitag', tags: 'frontend,backend' });
+      expect(bugs.length).toBe(2);
+    });
   });
 
   describe('update', () => {
@@ -244,8 +364,127 @@ describe('Bug Repository', () => {
     });
   });
 
+  describe('findById', () => {
+    test('should find by internal ID', async () => {
+      const bugId = await repo.getNextBugId('findbyid');
+      const created = await repo.create(bugId, {
+        workstream: 'findbyid',
+        summary: 'Find by internal ID',
+        reporterType: 'agent',
+        reporterName: 'test',
+      });
+
+      const found = await repo.findById(created.id);
+      expect(found).not.toBeNull();
+      expect(found!.bugId).toBe(bugId);
+    });
+
+    test('should return null for non-existent internal ID', async () => {
+      const found = await repo.findById(99999);
+      expect(found).toBeNull();
+    });
+  });
+
+  describe('security - LIKE pattern escaping', () => {
+    test('should escape _ in search', async () => {
+      const bugId = await repo.getNextBugId('underscore');
+      await repo.create(bugId, {
+        workstream: 'underscore',
+        summary: 'Bug in file_name.ts',
+        reporterType: 'agent',
+        reporterName: 'test',
+      });
+
+      // Search for literal _ - should not match single characters
+      const { bugs } = await repo.list({ limit: 50, offset: 0, search: 'file_name', workstream: 'underscore' });
+      expect(bugs.length).toBe(1);
+      expect(bugs[0].summary).toContain('file_name');
+    });
+
+    test('should escape special chars in tag filter', async () => {
+      const bugId = await repo.getNextBugId('tagsecurity');
+      await repo.create(bugId, {
+        workstream: 'tagsecurity',
+        summary: 'Bug with special tag',
+        reporterType: 'agent',
+        reporterName: 'test',
+        tags: ['100%_done'],
+      });
+
+      // Filter by tag with special chars
+      const { bugs } = await repo.list({ limit: 50, offset: 0, workstream: 'tagsecurity', tags: '100%_done' });
+      expect(bugs.length).toBe(1);
+      expect(bugs[0].tags).toContain('100%_done');
+    });
+  });
+
+  describe('security - sortBy/sortOrder validation', () => {
+    test('should default invalid sortBy to createdAt', async () => {
+      const bugId = await repo.getNextBugId('sortvalidation');
+      await repo.create(bugId, {
+        workstream: 'sortvalidation',
+        summary: 'For sorting test',
+        reporterType: 'agent',
+        reporterName: 'test',
+      });
+
+      // Attempt SQL injection via sortBy - should default to created_at safely
+      const { total } = await repo.list({
+        limit: 50,
+        offset: 0,
+        sortBy: 'status; DROP TABLE bugs--' as any,
+        sortOrder: 'desc',
+        workstream: 'sortvalidation',
+      });
+      expect(total).toBe(1);
+    });
+
+    test('should normalize malicious sortOrder', async () => {
+      const bugId = await repo.getNextBugId('ordervalidation');
+      await repo.create(bugId, {
+        workstream: 'ordervalidation',
+        summary: 'For sorting test',
+        reporterType: 'agent',
+        reporterName: 'test',
+      });
+
+      // Attempt SQL injection via sortOrder
+      const { total } = await repo.list({
+        limit: 50,
+        offset: 0,
+        sortBy: 'createdAt',
+        sortOrder: 'DESC; DROP TABLE bugs--' as any,
+        workstream: 'ordervalidation',
+      });
+      expect(total).toBe(1);
+    });
+  });
+
+  describe('edge cases', () => {
+    test('should return empty stats for empty database', async () => {
+      const stats = await repo.getStats();
+      expect(stats.total).toBe(0);
+      expect(stats.open).toBe(0);
+      expect(stats.inProgress).toBe(0);
+    });
+
+    test('should handle empty update gracefully', async () => {
+      const bugId = await repo.getNextBugId('emptyupdate');
+      const created = await repo.create(bugId, {
+        workstream: 'emptyupdate',
+        summary: 'No changes bug',
+        reporterType: 'agent',
+        reporterName: 'test',
+      });
+
+      const updated = await repo.update(bugId, {});
+      expect(updated).not.toBeNull();
+      expect(updated!.summary).toBe(created.summary);
+    });
+  });
+
   describe('getStats', () => {
-    test('should return correct statistics', async () => {
+    test('should return correct statistics including wontFix', async () => {
       // Create bugs with different statuses
       for (let i = 0; i < 3; i++) {
         const bugId = await repo.getNextBugId('stats');
@@ -275,11 +514,21 @@ describe('Bug Repository', () => {
       });
       await repo.update(fixedId, { status: 'Fixed' });
 
+      const wontFixId = await repo.getNextBugId('stats');
+      await repo.create(wontFixId, {
+        workstream: 'stats',
+        summary: "Won't fix bug",
+        reporterType: 'agent',
+        reporterName: 'test',
+      });
+      await repo.update(wontFixId, { status: "Won't Fix" });
+
       const stats = await repo.getStats();
-      expect(stats.total).toBe(5);
+      expect(stats.total).toBe(6);
       expect(stats.open).toBe(3);
       expect(stats.inProgress).toBe(1);
       expect(stats.fixed).toBe(1);
+      expect(stats.wontFix).toBe(1);
     });
   });
 });
