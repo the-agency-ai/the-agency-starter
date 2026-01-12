@@ -39,7 +39,7 @@ claude/principals/{name}/
 INSTR-XXXX-{principal}-{workstream}-{agent}-{title}.md
 ```
 
-Example: `INSTR-0001-jordan-web-web-implement-dark-mode.md`
+Example: `INSTR-0001-alice-web-web-implement-dark-mode.md`
 
 ## Artifact Naming
 
@@ -47,4 +47,4 @@ Example: `INSTR-0001-jordan-web-web-implement-dark-mode.md`
 ART-XXXX-{principal}-{workstream}-{agent}-{date}-{title}.md
 ```
 
-Example: `ART-0001-jordan-web-web-2026-01-01-dark-mode-implementation.md`
+Example: `ART-0001-alice-web-web-2026-01-01-dark-mode-implementation.md`

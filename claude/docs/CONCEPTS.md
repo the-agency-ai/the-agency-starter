@@ -88,7 +88,7 @@ An **instruction** is a directed task from a principal:
 ```markdown
 # INSTR-0001: Implement Dark Mode
 
-**Principal:** jordan
+**Principal:** alice
 **Date:** 2026-01-01
 **To:** web/web
 **Status:** Active
@@ -118,7 +118,7 @@ An **artifact** is a deliverable for a principal:
 ```markdown
 # ART-0001: Dark Mode Implementation Report
 
-**Principal:** jordan
+**Principal:** alice
 **Date:** 2026-01-01
 **Workstream:** web
 **Agent:** web
@@ -305,8 +305,8 @@ Each pack adds:
 |--------|---------|---------|
 | Agent | lowercase-hyphen | `agent-manager` |
 | Workstream | lowercase | `agents` |
-| Instruction | `INSTR-XXXX-...` | `INSTR-0001-jordan-web-web-dark-mode.md` |
-| Artifact | `ART-XXXX-...` | `ART-0001-jordan-web-web-2026-01-01-report.md` |
+| Instruction | `INSTR-XXXX-...` | `INSTR-0001-alice-web-web-dark-mode.md` |
+| Artifact | `ART-XXXX-...` | `ART-0001-alice-web-web-2026-01-01-report.md` |
 | Collaboration | `COLLABORATE-XXXX` | `FROM-web-web-COLLABORATE-0001-2026-01-01.md` |
 | Sprint | `sprint###` | `sprint001` |
 | Epic | `epic###` | `epic001` |
