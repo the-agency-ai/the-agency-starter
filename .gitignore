@@ -28,6 +28,16 @@ claude/logs/*.log
 claude/logs/*.json
 !claude/logs/.gitkeep
 
+# Runtime data
+claude/data/*.db
+claude/data/*.db-*
+claude/data/*.pid
+!claude/data/.gitkeep
+
+# Service logs
+source/services/*/logs/*.log
+services/*/logs/*.log
+
 # Session backups (optional - uncomment to ignore)
 # claude/logs/sessions/
 
