@@ -49,19 +49,8 @@ export async function getProjectRoot(): Promise<string> {
     return invoke('get_project_root');
   }
 
-  // Browser fallback - get from agency-service API
-  try {
-    const response = await fetch('http://localhost:3141/api/config/project-root');
-    if (response.ok) {
-      const data = await response.json();
-      return data.projectRoot;
-    }
-  } catch (e) {
-    console.warn('[Browser mode] Could not fetch project root from agency-service:', e);
-  }
-
-  // Final fallback if API unavailable
-  return process.cwd?.() || '.';
+  // Browser fallback
+  return '/Users/jdm/code/the-agency';
 }
 
 /**
@@ -118,4 +107,28 @@ export async function writeFile(path: string, content: string): Promise<void> {
   // Browser fallback
   console.log('[Browser mode] writeFile:', path, '(content length:', content.length, ')');
   throw new Error('File writing not available in browser mode');
+}
+
+/**
+ * Pending open file structure
+ */
+export interface PendingOpen {
+  app?: string;
+  file?: string;
+  action?: string;
+}
+
+/**
+ * Check for pending file to open (from CLI tools)
+ * Returns the pending open info and clears the pending file
+ */
+export async function getPendingOpen(): Promise<PendingOpen | null> {
+  if (isTauri) {
+    const { invoke } = await import('@tauri-apps/api/core');
+    return invoke('get_pending_open');
+  }
+
+  // Browser fallback
+  console.log('[Browser mode] getPendingOpen: no pending files');
+  return null;
 }

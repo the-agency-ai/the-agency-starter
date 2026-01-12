@@ -24,6 +24,8 @@ import { createTestService } from './embedded/test-service';
 import { createProductService } from './embedded/product-service';
 import { createSecretService } from './embedded/secret-service';
 import { createIdeaService } from './embedded/idea-service';
+import { createRequestService } from './embedded/request-service';
+import { createObservationService } from './embedded/observation-service';
 
 const logger = createServiceLogger('agency-service');
 
@@ -35,7 +37,7 @@ async function main() {
 
   // Global middleware
   app.use('*', cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'tauri://localhost'],
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3010', 'http://127.0.0.1:3010', 'tauri://localhost'],
     credentials: true,
   }));
   app.use('*', loggingMiddleware());
@@ -86,6 +88,12 @@ async function main() {
   const ideaServiceInstance = createIdeaService({ db });
   await ideaServiceInstance.initialize();
 
+  const requestServiceInstance = createRequestService({ db, queue });
+  await requestServiceInstance.initialize();
+
+  const observationServiceInstance = createObservationService({ db });
+  await observationServiceInstance.initialize();
+
   // Mount embedded service routes
   app.route('/api/bug', bugService.routes);
   app.route('/api/message', messagesService.routes);
@@ -94,6 +102,8 @@ async function main() {
   app.route('/api/products', productServiceInstance.routes);
   app.route('/api/secret', secretServiceInstance.routes);
   app.route('/api/idea', ideaServiceInstance.routes);
+  app.route('/api/request', requestServiceInstance.routes);
+  app.route('/api/observation', observationServiceInstance.routes);
 
   // API info endpoint
   app.get('/api', (c) => {
@@ -108,13 +118,10 @@ async function main() {
         'product-service': '/api/products',
         'secret-service': '/api/secret',
         'idea-service': '/api/idea',
+        'request-service': '/api/request',
+        'observation-service': '/api/observation',
       },
     });
-  });
-
-  // Project root endpoint (for AgencyBench browser mode)
-  app.get('/api/config/project-root', (c) => {
-    return c.json({ projectRoot: config.projectRoot });
   });
 
   // 404 handler
@@ -160,6 +167,8 @@ async function main() {
   console.log(`   Products: http://${config.host}:${config.port}/api/products`);
   console.log(`   Secret:   http://${config.host}:${config.port}/api/secret`);
   console.log(`   Idea:     http://${config.host}:${config.port}/api/idea`);
+  console.log(`   Request:  http://${config.host}:${config.port}/api/request`);
+  console.log(`   Observation: http://${config.host}:${config.port}/api/observation`);
 
   return server;
 }

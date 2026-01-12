@@ -2,7 +2,7 @@
 # Read configuration values from claude/config/agency.yaml
 #
 # Usage:
-#   ./tools/config get principals.username   # Get value for a key path
+#   ./tools/config get principals.jdm        # Get value for a key path
 #   ./tools/config get-principal             # Get principal for current $USER
 #   ./tools/config get project.timezone      # Get project timezone
 #   ./tools/config list                      # Show all config
@@ -109,7 +109,7 @@ PYTHON_EOF
     echo "  list              Show all config"
     echo ""
     echo "Examples:"
-    echo "  ./tools/config get principals.username"
+    echo "  ./tools/config get principals.jdm"
     echo "  ./tools/config get project.timezone"
     echo "  ./tools/config get-principal"
     ;;
