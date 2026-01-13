@@ -48,3 +48,6 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+# Agency local metadata
+.agency/
