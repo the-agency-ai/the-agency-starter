@@ -1,3 +1,4 @@
+<!-- AGENCY:START - This section is auto-updated by project-update. Do not edit. -->
 # The Agency
 
 A multi-agent development framework for Claude Code.
@@ -92,6 +93,12 @@ tools/                       # CLI tools for The Agency
 **Git:**
 - `./tools/sync` - Push with pre-commit checks
 - `./tools/doc-commit` - Commit documentation
+
+**Updates:**
+- `./tools/project-update --status` - Check version status
+- `./tools/project-update --preview` - Preview available updates
+- `./tools/project-update --apply` - Apply updates from latest starter
+- `./tools/project-update --init` - Initialize tracking for existing project
 
 **Secrets:**
 - `./tools/secret` - Secret management CLI (see Secrets section below)
@@ -457,3 +464,10 @@ See `CONTRIBUTING.md` for how to:
 ---
 
 *The Agency - Multi-agent development, done right.*
+<!-- AGENCY:END -->
+
+<!-- PROJECT:START - Add your project-specific instructions below. This section is preserved during updates. -->
+## Project-Specific Instructions
+
+Add your project-specific documentation, conventions, and instructions here. This section will be preserved when you run `./tools/project-update --apply`.
+<!-- PROJECT:END -->
