@@ -142,21 +142,6 @@ git commit -m "Initial commit from The Agency Starter" --quiet
 # Make tools executable
 chmod +x tools/* 2>/dev/null || true
 
-# Initialize version tracking
-echo "Initializing version tracking..."
-mkdir -p .agency
-STARTER_VERSION=$(cat VERSION 2>/dev/null | tr -d '[:space:]' || echo "1.0.0")
-NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-cat > .agency/version.json << VEOF
-{
-  "starter_version": "$STARTER_VERSION",
-  "installed_at": "$NOW",
-  "last_updated": "$NOW",
-  "source": "github:the-agency-ai/the-agency-starter",
-  "files": {}
-}
-VEOF
-
 # Configure principal with current user
 SYSTEM_USER=$(whoami)
 echo "Configuring for user: $SYSTEM_USER"

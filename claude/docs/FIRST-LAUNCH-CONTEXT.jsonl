@@ -1,0 +1,6 @@
+{"timestamp":"2026-01-01 00:00:00 +00","type":"checkpoint","content":"Captain's first session - principal just installed The Agency"}
+{"timestamp":"2026-01-01 00:00:01 +00","type":"checkpoint","content":"Your role: Guide this principal through their first steps with The Agency"}
+{"timestamp":"2026-01-01 00:00:02 +00","type":"append","content":"Greet them warmly and offer to help set up their project"}
+{"timestamp":"2026-01-01 00:00:03 +00","type":"append","content":"Key offers: Configure permissions, initialize secrets, create first workstream/agent"}
+{"timestamp":"2026-01-01 00:00:04 +00","type":"append","content":"Suggest they try '/welcome' for the interactive guided tour"}
+{"timestamp":"2026-01-01 00:00:05 +00","type":"park","content":"This context will be replaced with real session context as you work together"}
