@@ -23,23 +23,14 @@ out/
 .DS_Store
 Thumbs.db
 
-# Logs (keep structure, ignore contents)
-claude/logs/*.log
-claude/logs/*.json
-!claude/logs/.gitkeep
-
-# Runtime data
-claude/data/*.db
-claude/data/*.db-*
-claude/data/*.pid
-!claude/data/.gitkeep
-
-# Service logs
-source/services/*/logs/*.log
+# Service logs (in each service directory)
 services/*/logs/*.log
+services/*/logs/*.json
 
-# Session backups (optional - uncomment to ignore)
-# claude/logs/sessions/
+# Database files
+claude/data/*.db
+claude/data/*.db-wal
+claude/data/*.db-shm
 
 # Test coverage
 coverage/
@@ -49,5 +40,17 @@ coverage/
 *.temp
 .cache/
 
-# Agency local metadata
-.agency/
+# Principal secrets (never commit)
+claude/principals/*/resources/secrets/
+claude/apps/AgencyBench.app
+test/
+
+# Claude Code local settings (user customizations)
+.claude/settings.local.json
+
+# Session backups (ephemeral state - not versioned)
+claude/agents/*/backups/latest/
+claude/agents/*/backups/archive/
+
+# Services (local development)
+services/
