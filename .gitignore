@@ -40,8 +40,23 @@ coverage/
 *.temp
 .cache/
 
-# Principal secrets (never commit)
-claude/principals/*/resources/secrets/
+# Principal data (never commit - starter uses example-principal only)
+# The entire principals directory is blocked EXCEPT example-principal
+claude/principals/*
+!claude/principals/example-principal/
+!claude/principals/INDEX.md
+
+# Extra protection: block any secrets directory anywhere
+**/secrets/
+**/resources/secrets/
+
+# Block common secret file patterns
+*.env.local
+*.secret
+*.key
+*.pem
+*_rsa
+*.credentials
 claude/apps/AgencyBench.app
 test/
 
