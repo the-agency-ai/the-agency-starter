@@ -1,6 +1,11 @@
 #!/bin/bash
 # SessionStart hook: Restore context from previous session
 
+# Enable trace mode if DEBUG_HOOKS is set
+if [[ -n "${DEBUG_HOOKS}" ]]; then
+    set -x
+fi
+
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 AGENTNAME="${AGENTNAME:-captain}"
 CONTEXT_FILE="$REPO_ROOT/claude/agents/$AGENTNAME/backups/latest/context.jsonl"
@@ -46,5 +51,24 @@ if [[ -f "$GIT_STATUS_FILE" ]]; then
 fi
 
 echo "=== END PREVIOUS SESSION CONTEXT ==="
+
+# Check for news/messages (choreography)
+NEWS_OUTPUT=$("$REPO_ROOT/tools/news-read" --quiet 2>/dev/null)
+if [[ -n "$NEWS_OUTPUT" ]]; then
+  echo ""
+  echo "=== UNREAD NEWS ==="
+  echo "$NEWS_OUTPUT"
+  echo "=== END NEWS ==="
+fi
+
+# Check for pending collaborations
+COLLAB_OUTPUT=$("$REPO_ROOT/tools/collaboration-pending" 2>/dev/null | grep -v "^$" | head -5)
+if [[ -n "$COLLAB_OUTPUT" ]]; then
+  echo ""
+  echo "=== PENDING COLLABORATIONS ==="
+  echo "$COLLAB_OUTPUT"
+  echo "Run ./tools/collaboration-pending to see full details"
+  echo "=== END COLLABORATIONS ==="
+fi
 
 exit 0
