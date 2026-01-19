@@ -59,5 +59,5 @@ Example:
 
 ```bash
 # Spawn as Task subagent with prompt above
-# Replace {WORK-ITEM} with actual work item ID (e.g., REQUEST-alice-0001)
+# Replace {WORK-ITEM} with actual work item ID (e.g., REQUEST-jordan-0065)
 ```

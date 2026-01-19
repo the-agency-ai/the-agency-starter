@@ -195,7 +195,7 @@ Save context at these key moments:
 
 ```bash
 # Starting work
-./tools/context-save --append "Continuing REQUEST-alice-0001 - authentication feature"
+./tools/context-save --append "Continuing REQUEST-jordan-0048 - iTerm integration"
 
 # Completing milestone
 ./tools/context-save --checkpoint "Permission system redesigned - layered approach working"
@@ -288,9 +288,9 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 **Examples:**
 ```
-REQUEST-alice-0001 - web/frontend for alice: add user authentication
+REQUEST-jordan-0065 - housekeeping/captain for jordan: add Red-Green workflow docs
 
-REQUEST-alice-0002 - api/backend for alice: fix input validation vulnerability
+REQUEST-jordan-0066 - housekeeping/captain for jordan: fix path traversal vulnerability
 
 housekeeping/captain: update README formatting
 ```
@@ -298,7 +298,7 @@ housekeeping/captain: update README formatting
 **Using ./tools/commit:**
 ```bash
 # With work item
-./tools/commit "add user authentication" --work-item REQUEST-alice-0001 --stage impl
+./tools/commit "add Red-Green workflow docs" --work-item REQUEST-jordan-0065 --stage impl
 
 # Simple commit (no work item)
 ./tools/commit "update README formatting"
@@ -350,6 +350,32 @@ Work in The Agency is tracked through REQUEST files. Each REQUEST goes through d
 - `BUG-XXXX` - Bug fixes (can be addressed individually or via REQUEST)
 - `ADHOC-` - Agent-initiated work (logged in ADHOC-WORKLOG.md)
 
+### Managing Work Items
+
+**ALWAYS use the request service tools - never manually edit status:**
+
+```bash
+# List open requests
+./tools/requests
+
+# Create a new request
+./tools/request --agent captain --summary "Add feature X"
+
+# Mark request complete (creates git tag + updates service)
+./tools/request-complete REQUEST-jordan-0017 "Feature implemented"
+
+# Sync request files to service (after manual file changes)
+./tools/requests-backfill
+```
+
+The request service tracks all work items in a database. Use the API for status updates:
+```bash
+# Update request status via API
+curl -X POST "http://127.0.0.1:3141/api/request/update/REQUEST-jordan-0017" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "Complete"}'
+```
+
 ### REQUEST Stages
 ```
 impl     → Implementation complete, tested locally
@@ -360,11 +386,11 @@ complete → All phases done, ready for release
 
 ### Tagging Convention
 ```bash
-./tools/tag REQUEST-alice-0001 impl      # REQUEST-alice-0001-impl
-./tools/tag REQUEST-alice-0001 review    # REQUEST-alice-0001-review
-./tools/tag REQUEST-alice-0001 tests     # REQUEST-alice-0001-tests
-./tools/tag REQUEST-alice-0001 complete  # REQUEST-alice-0001-complete
-./tools/tag release 0.6.0                # v0.6.0
+./tools/tag REQUEST-jordan-0017 impl      # REQUEST-jordan-0017-impl
+./tools/tag REQUEST-jordan-0017 review    # REQUEST-jordan-0017-review
+./tools/tag REQUEST-jordan-0017 tests     # REQUEST-jordan-0017-tests
+./tools/tag REQUEST-jordan-0017 complete  # REQUEST-jordan-0017-complete
+./tools/tag release 0.6.0                 # v0.6.0
 ```
 
 ## Development Workflow
@@ -431,7 +457,7 @@ This workflow applies to any work item: REQUEST, Phase, Task, Iteration, or Spri
 
 **Tag Examples:**
 ```bash
-./tools/tag REQUEST-alice-0001 impl        # REQUEST-alice-0001-impl
+./tools/tag REQUEST-jordan-0065 impl       # REQUEST-jordan-0065-impl
 ./tools/tag SPRINT-web-2026w03 review      # SPRINT-web-2026w03-review
 ./tools/tag ITERATION-hub-mvh-1 tests      # ITERATION-hub-mvh-1-tests
 ./tools/tag PHASE-hub-A complete           # PHASE-hub-A-complete

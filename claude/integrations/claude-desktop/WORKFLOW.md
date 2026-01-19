@@ -240,4 +240,4 @@ Project Knowledge ◄────────────┘
 
 ---
 
-*Part of [The Agency](https://github.com/the-agency-ai/the-agency-starter) multi-agent development framework.*
+*Part of [The Agency](https://github.com/jordandm/the-agency-starter) multi-agent development framework.*
