@@ -54,9 +54,9 @@ Projects can have multiple principals:
 
 Example team:
 ```
-jordan/      # Frontend lead
-alex/        # Backend lead
-sam/         # Designer
+alice/       # Frontend lead
+bob/         # Backend lead
+carol/       # Designer
 ```
 
 ## REQUESTs

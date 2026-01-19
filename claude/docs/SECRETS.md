@@ -149,7 +149,7 @@ Share secrets with specific agents or principals:
 ./tools/secret grant my-secret --to=agent:housekeeping --permission=read
 
 # Grant admin access to a principal
-./tools/secret grant my-secret --to=principal:jordan --permission=admin
+./tools/secret grant my-secret --to=principal:alice --permission=admin
 ```
 
 **Permission Levels:**
@@ -232,7 +232,7 @@ bun run dev
 
 ```bash
 SECRET_SERVICE_URL=http://localhost:3141/api/secret
-AGENCY_USER=principal:jordan  # or agent:housekeeping
+AGENCY_USER=principal:alice  # or agent:housekeeping
 ```
 
 ### Service Requirements

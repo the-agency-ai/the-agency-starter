@@ -18,9 +18,9 @@ mkdir -p claude/principals/{name}/artifacts
 touch claude/principals/{name}/preferences.yaml
 ```
 
-Or use the housekeeping agent:
+Or ask the captain:
 ```bash
-./tools/myclaude housekeeping housekeeping "Add a principal named {name}"
+./tools/myclaude housekeeping captain "Add a principal named {name}"
 ```
 
 ## Principal Directory Structure

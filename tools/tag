@@ -2,10 +2,17 @@
 # Create properly formatted tags for work items and releases
 #
 # Usage:
+#   ./tools/tag {WORK-ITEM} {stage}           # {WORK-ITEM}-{stage}
+#   ./tools/tag release {version} [suffix]    # v{version}[-suffix]
+#
+# Work Item Examples:
 #   ./tools/tag REQUEST-jordan-0017 impl      # REQUEST-jordan-0017-impl
-#   ./tools/tag REQUEST-jordan-0017 review    # REQUEST-jordan-0017-review
-#   ./tools/tag REQUEST-jordan-0017 tests     # REQUEST-jordan-0017-tests
-#   ./tools/tag REQUEST-jordan-0017 complete  # REQUEST-jordan-0017-complete
+#   ./tools/tag SPRINT-web-2026w03 review     # SPRINT-web-2026w03-review
+#   ./tools/tag ITERATION-hub-mvh-1 tests     # ITERATION-hub-mvh-1-tests
+#   ./tools/tag PHASE-hub-A complete          # PHASE-hub-A-complete
+#   ./tools/tag TASK-auth-refactor impl       # TASK-auth-refactor-impl
+#
+# Release Examples:
 #   ./tools/tag release 0.6.0                 # v0.6.0
 #   ./tools/tag release 0.6.0 rc1             # v0.6.0-rc1
 #
@@ -14,10 +21,13 @@
 #   --message, -m Custom tag message
 #   --dry-run     Show what would be done without doing it
 #   --list        List tags for a work item
+#   --skip-tests  Skip test verification (use sparingly!)
 #
 # Valid stages: impl, review, tests, complete
+#
+# Note: For impl, review, and tests stages, tests must pass (GREEN) before tagging.
 
-set -e
+set -euo pipefail
 
 TOOL_VERSION="1.1.0-20260114-000002"
 
@@ -51,6 +61,7 @@ VALID_STAGES="impl review tests complete"
 PUSH=false
 DRY_RUN=false
 LIST=false
+SKIP_TESTS=false
 MESSAGE=""
 
 while [[ $# -gt 0 ]]; do
@@ -69,6 +80,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --dry-run)
             DRY_RUN=true
+            shift
+            ;;
+        --skip-tests)
+            SKIP_TESTS=true
             shift
             ;;
         --list)
@@ -121,16 +136,16 @@ SUFFIX="${3:-}"
 
 # Main function
 main() {
-    # Trap unexpected exits
-    trap 'log_end "$LOG_RUN_ID" "failure" $? 0 "Unexpected exit" 2>/dev/null || true' EXIT
-
-    echo "tag [run: ${LOG_RUN_ID:-none}]"
-
-    # Start logging
+    # Start logging first
     LOG_RUN_ID=""
     if type log_start &>/dev/null; then
         LOG_RUN_ID=$(log_start "tag" "agency-tool" "$ITEM" "$STAGE" "$SUFFIX")
     fi
+
+    # Trap unexpected exits
+    trap 'log_end "$LOG_RUN_ID" "failure" $? 0 "Unexpected exit" 2>/dev/null || true' EXIT
+
+    echo "tag [run: ${LOG_RUN_ID:-none}]"
 
     # Determine tag format
     if [ "$ITEM" = "release" ]; then
@@ -165,6 +180,23 @@ main() {
 
         TAG_NAME="${ITEM}-${STAGE}"
         DEFAULT_MESSAGE="${ITEM} - ${STAGE} phase complete"
+
+        # Verify tests pass for impl, review, tests stages (not complete)
+        if [ "$STAGE" != "complete" ] && [ "$SKIP_TESTS" = false ]; then
+            echo -e "${BLUE}Verifying tests pass (GREEN)...${NC}"
+            if [ -x "./tools/test-run" ]; then
+                if ! ./tools/test-run --quiet 2>/dev/null; then
+                    log_error "Tests failed - cannot tag on RED"
+                    echo -e "${YELLOW}Fix failing tests or use --skip-tests to bypass${NC}"
+                    trap - EXIT
+                    log_end "$LOG_RUN_ID" "failure" "1" "0" "Tests failed"
+                    exit 1
+                fi
+                echo -e "${GREEN}✓ Tests passed (GREEN)${NC}"
+            else
+                log_warn "No ./tools/test-run found - skipping test verification"
+            fi
+        fi
     fi
 
     # Use custom message or default
@@ -205,20 +237,25 @@ main() {
             log_end "$LOG_RUN_ID" "success" "0" "0" "Dry run: $TAG_NAME"
         fi
     else
-        git tag -a "$TAG_NAME" -m "$TAG_MESSAGE"
-        echo "Created tag: $TAG_NAME"
+        if git tag -a "$TAG_NAME" -m "$TAG_MESSAGE" 2>/dev/null; then
+            echo "Created: $TAG_NAME"
 
-        if [ "$PUSH" = true ]; then
-            git push origin "$TAG_NAME"
-            log_info "Pushed tag to remote"
+            if [ "$PUSH" = true ]; then
+                git push origin "$TAG_NAME" >/dev/null 2>&1
+            fi
+
+            echo "✓"
+            trap - EXIT
+            if type log_end &>/dev/null && [[ -n "$LOG_RUN_ID" ]]; then
+                log_end "$LOG_RUN_ID" "success" "0" "0" "Created tag: $TAG_NAME"
+            fi
         else
-            log_warn "Tip: Use --push to push to remote, or run: git push origin $TAG_NAME"
-        fi
-
-        # End logging
-        trap - EXIT
-        if type log_end &>/dev/null && [[ -n "$LOG_RUN_ID" ]]; then
-            log_end "$LOG_RUN_ID" "success" "0" "0" "Created tag: $TAG_NAME"
+            echo "✗"
+            trap - EXIT
+            if type log_end &>/dev/null && [[ -n "$LOG_RUN_ID" ]]; then
+                log_end "$LOG_RUN_ID" "failure" "1" "0" "Failed to create tag: $TAG_NAME"
+            fi
+            exit 1
         fi
     fi
 }

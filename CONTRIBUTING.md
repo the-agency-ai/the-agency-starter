@@ -165,7 +165,7 @@ When creating a starter pack:
 ## Questions?
 
 - Open a [Discussion](https://github.com/the-agency-ai/the-agency-starter/discussions)
-- Ask the housekeeping agent: `./tools/myclaude housekeeping housekeeping "How do I contribute...?"`
+- Ask the captain: `./tools/myclaude housekeeping captain "How do I contribute...?"`
 
 ---
 

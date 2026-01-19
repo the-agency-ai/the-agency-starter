@@ -133,10 +133,10 @@ Test it:
 
 ## Step 4: Meet Your Housekeeping Agent
 
-The housekeeping agent is your guide. Launch it:
+The captain is your guide. Launch it:
 
 ```bash
-./tools/myclaude housekeeping housekeeping
+./tools/myclaude housekeeping captain
 ```
 
 When it starts, it will:
@@ -459,8 +459,8 @@ source/                 # Apps, services, packages
 |--------|--------|---------|
 | Agent | lowercase-hyphen | `web`, `agent-manager` |
 | Workstream | lowercase | `web`, `agents` |
-| Instruction | INSTR-XXXX | `INSTR-0001-jordan-web-web-dark-mode.md` |
-| Artifact | ART-XXXX | `ART-0001-jordan-web-web-2026-01-01-report.md` |
+| Instruction | INSTR-XXXX | `INSTR-0001-alice-web-frontend-dark-mode.md` |
+| Artifact | ART-XXXX | `ART-0001-alice-web-frontend-2026-01-01-report.md` |
 
 ---
 
@@ -504,11 +504,11 @@ Ensure you're using iTerm2 (macOS) or a terminal that supports escape sequences 
 
 ## Getting Help
 
-### Ask Housekeeping
+### Ask the Captain
 
-Your housekeeping agent knows The Agency inside and out:
+The captain knows The Agency inside and out:
 ```bash
-./tools/myclaude housekeeping housekeeping "How do I...?"
+./tools/myclaude housekeeping captain "How do I...?"
 ```
 
 ### Check Documentation

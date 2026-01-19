@@ -142,7 +142,7 @@ Replace `__TOKEN__` with your GitHub PAT before sharing.
 | 7 | Makes all tools executable |
 | 8 | Runs platform setup (installs tools via brew on macOS) |
 | 9 | Prompts to launch The Captain |
-| 10 | Execs into `./tools/myclaude housekeeping housekeeping` |
+| 10 | Execs into `./tools/myclaude housekeeping captain` |
 
 ---
 
@@ -157,7 +157,7 @@ A: Manual fallback:
 git clone https://github.com/the-agency-ai/the-agency-starter.git my-project
 cd my-project
 chmod +x tools/*
-./tools/myclaude housekeeping housekeeping
+./tools/myclaude housekeeping captain
 ```
 
 **Q: What if Claude Code install fails?**

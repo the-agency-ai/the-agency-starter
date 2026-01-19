@@ -16,7 +16,7 @@
 # 4. Commits and tags the release
 # 5. Updates history/releases.md
 
-set -e
+set -euo pipefail
 
 # Source log helper for telemetry
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
@@ -167,6 +167,7 @@ sync_files() {
         "claude/templates"
         "claude/workstreams"
         "tools"
+        "tests/tools"
         "source/apps/agency-bench"
         "source/services/agency-service"
     )
@@ -178,6 +179,7 @@ sync_files() {
     mkdir -p "$STARTER_DIR/claude/agents/captain"
     mkdir -p "$STARTER_DIR/source/apps"
     mkdir -p "$STARTER_DIR/source/services"
+    mkdir -p "$STARTER_DIR/tests"
 
     # Sync each item
     for item in "${sync_items[@]}"; do

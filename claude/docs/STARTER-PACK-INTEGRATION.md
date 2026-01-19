@@ -217,8 +217,7 @@ Users with existing installations will need to:
 - `claude/docs/FIRST-LAUNCH.md` - First-launch experience documentation
 - `claude/docs/FIRST-LAUNCH-CONTEXT.jsonl` - Template context file
 - `claude/agents/captain/agent.md` - Captain's full identity
-- REQUEST-jordan-0049 - This work item
 
 ---
 
-*Document created for the-agency-starter integration after captain rename*
+*Document describes starter pack integration patterns*

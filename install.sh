@@ -133,6 +133,18 @@ cd "$INSTALL_DIR"
 echo "Setting up tools..."
 chmod +x tools/*
 
+# Install dependencies
+echo ""
+echo -e "${BLUE}Installing dependencies...${NC}"
+if [ -x "./tools/dependencies-install" ]; then
+    ./tools/dependencies-install || {
+        echo -e "${YELLOW}Some dependencies failed to install.${NC}"
+        echo "You can install them manually with: ./tools/dependencies-check --fix"
+    }
+else
+    echo -e "${YELLOW}dependencies-install not found, skipping auto-install${NC}"
+fi
+
 # Done with setup
 echo ""
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

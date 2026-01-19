@@ -18,7 +18,7 @@
 #
 # Context-efficient: 1-line output, details in log-service
 
-set -uo pipefail
+set -euo pipefail
 
 # Tool version
 TOOL_VERSION="2.0.0-3"
@@ -83,19 +83,7 @@ log_info() { log "info" "$1"; }
 log_warn() { log "warn" "$1"; }
 log_error() { log "error" "$1"; }
 
-# Start tool run
-start_run() {
-    if [[ "$VERBOSE" == "true" ]]; then
-        RUN_ID=""
-        return
-    fi
-
-    RUN_ID=$(curl -s -X POST "http://127.0.0.1:3141/api/log/run" \
-        -H "Content-Type: application/json" \
-        -d "{\"tool\":\"commit-precheck\"}" 2>/dev/null | grep -o '"runId":"[^"]*"' | cut -d'"' -f4 || true)
-}
-
-# End tool run
+# End tool run (wrapper for log_end from _log-helper)
 end_run() {
     local status="$1"
     local summary="$2"
@@ -104,31 +92,22 @@ end_run() {
         return
     fi
 
-    if [[ -n "$RUN_ID" ]]; then
-        curl -s -X POST "http://127.0.0.1:3141/api/log/run/${RUN_ID}/end" \
-            -H "Content-Type: application/json" \
-            -d "{\"status\":\"$status\",\"summary\":\"$summary\"}" > /dev/null 2>&1 || true
-    fi
+    # Use log_end from _log-helper
+    log_end "$RUN_ID" "$status" "0" "0" "$summary"
 }
 
-# Output result (single line)
+# Output result (standard format)
 output_success() {
     local message="$1"
-    if [[ -n "$RUN_ID" ]]; then
-        echo "SUCCESS: $message (run-id: $RUN_ID)"
-    else
-        echo "SUCCESS: $message"
-    fi
+    echo "$message"
+    echo "✓"
 }
 
 output_failure() {
     local message="$1"
-    if [[ -n "$RUN_ID" ]]; then
-        echo "FAILURE: $message (run-id: $RUN_ID)"
-        echo "  Debug: ./tools/agency-service log run $RUN_ID errors"
-    else
-        echo "FAILURE: $message"
-    fi
+    echo "$message"
+    echo "✗"
+    # Verbose output available via run ID
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -136,7 +115,7 @@ output_failure() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 main() {
-    start_run
+    echo "commit-precheck [run: ${RUN_ID:-none}]"
 
     REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
     cd "$REPO_ROOT"
@@ -185,28 +164,41 @@ main() {
         ((STEPS_PASSED++))
     fi
 
-    # Step 3: Type check (blocking)
+    # Step 3: Type check (blocking if script exists)
     log_info "Step 3/5: Type checking"
-    if $PM typecheck 2>&1 >/dev/null; then
+    # Try to run typecheck - if script doesn't exist, skip gracefully
+    if $PM run typecheck 2>&1 >/dev/null; then
         log_info "Type check passed"
         ((STEPS_PASSED++))
     else
-        log_error "Type errors found"
-        end_run "failure" "Type check failed"
-        output_failure "Type check failed"
-        exit 2
+        # Check if failure was due to missing script
+        TYPE_OUTPUT=$($PM run typecheck 2>&1 || true)
+        if echo "$TYPE_OUTPUT" | grep -q "Missing script\|not found\|ERR_PNPM_NO_SCRIPT"; then
+            log_warn "Type check script not found (skipping)"
+            ((STEPS_PASSED++))
+        else
+            log_error "Type errors found"
+            end_run "failure" "Type check failed"
+            output_failure "Type check failed"
+            exit 2
+        fi
     fi
 
-    # Step 4: Unit tests (blocking)
+    # Step 4: Unit tests (blocking if tool exists)
     log_info "Step 4/5: Running unit tests"
-    if ./tools/test-run 2>&1 >/dev/null; then
-        log_info "Unit tests passed"
-        ((STEPS_PASSED++))
+    if [ -x "./tools/test-run" ]; then
+        if ./tools/test-run 2>&1 >/dev/null; then
+            log_info "Unit tests passed"
+            ((STEPS_PASSED++))
+        else
+            log_error "Unit tests failed"
+            end_run "failure" "Unit tests failed"
+            output_failure "Unit tests failed"
+            exit 2
+        fi
     else
-        log_error "Unit tests failed"
-        end_run "failure" "Unit tests failed"
-        output_failure "Unit tests failed"
-        exit 2
+        log_warn "Test runner not found (skipping)"
+        ((STEPS_PASSED++))
     fi
 
     # Step 5: Code review (blocking)
