@@ -1,6 +1,12 @@
 # Changelog
 
 
+## [1.3.0] - 2026-01-23
+
+- Synced from the-agency
+- See GitHub release for details
+
+
 ## [1.2.1] - 2026-01-18
 
 - Synced from the-agency

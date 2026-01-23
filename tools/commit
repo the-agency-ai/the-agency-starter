@@ -4,7 +4,9 @@
 # Usage:
 #   ./tools/commit "short summary" --work-item REQUEST-jordan-0065 --stage impl
 #   ./tools/commit "fix null handling" --work-item BUG-0042 --stage review
-#   ./tools/commit "update README"  # No work item (simple commit)
+#   ./tools/commit "quick doc fix" --adhoc  # Escape hatch for ad-hoc work
+#
+# IMPORTANT: Work item OR --adhoc is REQUIRED. Commits without either are blocked.
 #
 # Format (with work item):
 #   {WORK-ITEM} - {WORKSTREAM}/{AGENT} for {PRINCIPAL}: {SHORT SUMMARY}
@@ -26,6 +28,7 @@
 # Options:
 #   --work-item, -w   Work item ID (REQUEST-jordan-0065, SPRINT-web-2026w03, etc.)
 #   --stage, -s       Stage: impl, review, tests (required if work-item provided)
+#   --adhoc           Escape hatch for ad-hoc work (logs to ADHOC-WORKLOG.md)
 #   --body, -b        Detailed commit body
 #   --principal, -p   Override principal (default: from config or work item)
 #   --no-verify       Skip pre-commit hooks
@@ -38,7 +41,7 @@
 set -euo pipefail
 
 # Tool version
-TOOL_VERSION="1.1.0-20260114-000001"
+TOOL_VERSION="2.0.0-20260120-000002"
 
 # Source log helper for tool tracking
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -67,11 +70,15 @@ AMEND=false
 DRY_RUN=false
 STAGED_ONLY=false
 VERBOSE=false
+ADHOC=false
 WORK_ITEM=""
 STAGE=""
 BODY=""
 PRINCIPAL_OVERRIDE=""
 MESSAGE=""
+
+# Valid work item patterns (extensible for future types)
+WORK_ITEM_PATTERN='^(REQUEST|BUG|TASK|PHASE|ITERATION|SPRINT)-[a-zA-Z0-9-]+$'
 
 # Parse options
 while [[ $# -gt 0 ]]; do
@@ -104,19 +111,39 @@ while [[ $# -gt 0 ]]; do
             STAGED_ONLY=true
             shift
             ;;
+        --adhoc)
+            ADHOC=true
+            shift
+            ;;
         --work-item|-w)
+            if [[ -z "${2:-}" || "$2" == -* ]]; then
+                log_error "--work-item requires a value"
+                exit 1
+            fi
             WORK_ITEM="$2"
             shift 2
             ;;
         --stage|-s)
+            if [[ -z "${2:-}" || "$2" == -* ]]; then
+                log_error "--stage requires a value"
+                exit 1
+            fi
             STAGE="$2"
             shift 2
             ;;
         --body|-b)
+            if [[ -z "${2:-}" || "$2" == -* ]]; then
+                log_error "--body requires a value"
+                exit 1
+            fi
             BODY="$2"
             shift 2
             ;;
         --principal|-p)
+            if [[ -z "${2:-}" || "$2" == -* ]]; then
+                log_error "--principal requires a value"
+                exit 1
+            fi
             PRINCIPAL_OVERRIDE="$2"
             shift 2
             ;;
@@ -152,6 +179,33 @@ main() {
         exit 1
     fi
 
+    # ENFORCEMENT: Require work item OR --adhoc
+    if [ -z "$WORK_ITEM" ] && [ "$ADHOC" = false ]; then
+        log_error "Work item required"
+        echo ""
+        echo "Every commit must reference a work item:"
+        echo "  ./tools/commit \"message\" --work-item REQUEST-jordan-XXXX --stage impl"
+        echo ""
+        echo "For ad-hoc work (escape hatch):"
+        echo "  ./tools/commit \"message\" --adhoc"
+        echo ""
+        echo "Valid work item types: REQUEST, BUG, TASK, PHASE, ITERATION, SPRINT"
+        trap - EXIT
+        log_end "$RUN_ID" "failure" 1 0 "Missing work item"
+        exit 1
+    fi
+
+    # Validate work item format if provided
+    if [ -n "$WORK_ITEM" ]; then
+        if ! [[ "$WORK_ITEM" =~ $WORK_ITEM_PATTERN ]]; then
+            log_error "Invalid work item format: $WORK_ITEM"
+            echo "Expected: REQUEST-principal-XXXX, BUG-workstream-XXXXX, TASK-id, etc."
+            trap - EXIT
+            log_end "$RUN_ID" "failure" 1 0 "Invalid work item format"
+            exit 1
+        fi
+    fi
+
     # Validate: if work item provided, stage is required
     if [ -n "$WORK_ITEM" ] && [ -z "$STAGE" ]; then
         log_error "Stage required when work item is provided (--stage impl|review|tests)"
@@ -179,10 +233,16 @@ main() {
 
     # If not set, try to infer from myclaude session marker
     if [ -z "$WORKSTREAM" ] || [ -z "$AGENT" ]; then
-        # Check for session file
+        # Check for session file (safely parse, don't source arbitrary code)
         SESSION_FILE="${HOME}/.claude/current-session"
         if [ -f "$SESSION_FILE" ]; then
-            source "$SESSION_FILE" 2>/dev/null || true
+            # Only extract expected variable assignments
+            while IFS='=' read -r key value; do
+                case "$key" in
+                    AGENCY_WORKSTREAM) WORKSTREAM="${value//[^a-zA-Z0-9_-]/}" ;;
+                    AGENCY_AGENT) AGENT="${value//[^a-zA-Z0-9_-]/}" ;;
+                esac
+            done < "$SESSION_FILE" 2>/dev/null || true
         fi
     fi
 
@@ -205,14 +265,15 @@ main() {
     if [ -n "$PRINCIPAL_OVERRIDE" ]; then
         PRINCIPAL="$PRINCIPAL_OVERRIDE"
     elif [ -n "$WORK_ITEM" ]; then
-        # Try to extract principal from work item (e.g., REQUEST-jordan-0065 -> jordan)
-        if [[ "$WORK_ITEM" =~ ^[A-Z]+-([a-z]+)- ]]; then
+        # Try to extract principal from REQUEST work items (e.g., REQUEST-jordan-0065 -> jordan)
+        # Only REQUEST type has principal in the ID; others (SPRINT, PHASE, etc.) do not
+        if [[ "$WORK_ITEM" =~ ^REQUEST-([a-z]+)-[0-9]+ ]]; then
             PRINCIPAL="${BASH_REMATCH[1]}"
         fi
     fi
     # Fallback: try environment or config
     if [ -z "$PRINCIPAL" ]; then
-        PRINCIPAL="${AGENCY_PRINCIPAL:-${PRINCIPAL:-unknown}}"
+        PRINCIPAL="${AGENCY_PRINCIPAL:-unknown}"
     fi
 
     # Build the commit message
@@ -300,6 +361,29 @@ main() {
     if [ $COMMIT_EXIT -eq 0 ]; then
         COMMIT_HASH=$(git log -1 --format='%h')
         echo "Committed: $COMMIT_HASH"
+
+        # Log to ADHOC-WORKLOG.md if --adhoc was used
+        if [ "$ADHOC" = true ]; then
+            REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+            # Validate AGENT to prevent path traversal
+            if [[ ! "$AGENT" =~ ^[a-z][a-z0-9-]*$ ]]; then
+                log_warn "Invalid agent name for adhoc log: $AGENT"
+            else
+                ADHOC_LOG="$REPO_ROOT/claude/agents/${AGENT}/ADHOC-WORKLOG.md"
+                if [ -f "$ADHOC_LOG" ]; then
+                    DATE_NOW=$(date +%Y-%m-%d)
+                    TIME_NOW=$(date +%H:%M)
+                    echo "" >> "$ADHOC_LOG"
+                    echo "### $DATE_NOW $TIME_NOW - Ad-hoc: $MESSAGE" >> "$ADHOC_LOG"
+                    echo "- Commit: $COMMIT_HASH" >> "$ADHOC_LOG"
+                    echo "- Agent: ${WORKSTREAM}/${AGENT}" >> "$ADHOC_LOG"
+                    verbose_echo "Logged to ADHOC-WORKLOG.md"
+                else
+                    log_warn "ADHOC-WORKLOG.md not found at $ADHOC_LOG"
+                fi
+            fi
+        fi
+
         echo "✓"
 
         verbose_echo ""

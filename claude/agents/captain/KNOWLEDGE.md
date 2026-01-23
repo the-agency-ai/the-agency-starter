@@ -99,6 +99,22 @@ When work spans multiple agents:
 ./tools/instruction-show       # See active instructions
 ```
 
+## Agency Service
+
+The agency-service runs on port 3141 and provides the API layer for all embedded services.
+
+### Key Endpoints
+- `/health` - Health check (no auth required, for monitoring/load balancers)
+- `/api` - Service index (lists all available service routes)
+- `/api/*` - All service routes (require auth)
+
+**Note:** The health endpoint is at `/health`, NOT `/api/health`. This is intentional - health checks must be accessible without authentication.
+
+### Checking Service Status
+```bash
+curl http://127.0.0.1:3141/health
+```
+
 ## Framework-Specific Notes
 
 _This section grows as you add starter packs._
@@ -113,10 +129,67 @@ _This section grows as you add starter packs._
 ### Python
 - See `claude/starter-packs/python/` when available
 
+## Known Issues
+
+### Test Pollution: principals/INDEX.md
+Tests in `tests/tools/principal.bats` create test principals using `principal-create`. The cleanup removes directories but not the INDEX.md entries that `principal-create` appends. This causes test pollution in `claude/principals/INDEX.md`.
+
+**Workaround:** Manually clean up INDEX.md after running tests.
+
+**Fix needed:** Tests should remove their INDEX.md entries in cleanup, or use a test-specific INDEX.md.
+
+## Claude Code Extensibility: Hybrid Model
+
+Research conducted 2026-01-21 into Claude Code's native extensibility features.
+
+**Key Finding:** Adopt a hybrid model - preserve Agency's organizational structure while selectively adding native features.
+
+### Agents vs Subagents
+
+| Type | Purpose | Principal Access | Persistence |
+|------|---------|------------------|-------------|
+| **Agency Agent** | Entity with identity | Yes | WORKLOG, KNOWLEDGE |
+| **Native Subagent** | Ephemeral worker | No | None |
+
+**Pattern:** Agents spawn subagents for tasks, then consolidate results.
+
+```
+Principal → Agent (captain) → Subagents (reviewers) → Agent consolidates → Principal
+```
+
+### Skills Wrap Tools
+
+- **Skills** provide discovery and context (`/commit`)
+- **Tools** provide enforcement and logging (`./tools/commit`)
+- Skills guide, tools enforce
+
+### Quick Wins Identified
+
+1. **Prompt-based Stop hook** - LLM verifies completion before stopping
+2. **Path-specific rules** - `.claude/rules/` with path globs
+3. **Worker subagents** - code-reviewer, test-runner in `.claude/agents/`
+
+### What We Keep
+
+- Organizational model (workstreams, principals, REQUESTs)
+- Persistent agent identity (WORKLOG, KNOWLEDGE)
+- Tool enforcement + logging infrastructure
+- AIADLC framework
+
+**Full research:** `claude/docs/claude-code-extensibility/FINDINGS-CLAUDE-CODE-EXTENSIBILITY.md`
+
 ## Learnings Log
 
 _Add significant learnings here as you work._
 
+### 2026-01-21: Parallel Research Value
+
+Two agents (captain + research) independently researched Claude Code extensibility. Different contexts produced different emphases:
+- Research agent (fresh eyes): Focused on compatibility, incremental adoption
+- Captain (deep context): Focused on trade-offs, what we'd lose
+
+Synthesis was stronger than either alone. Consider parallel research for future investigations.
+
 ---
 
-*Last updated: Session start*
+*Last updated: 2026-01-21*

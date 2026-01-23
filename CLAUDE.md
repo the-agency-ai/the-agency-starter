@@ -97,6 +97,12 @@ tools/                       # CLI tools for The Agency
 - `./tools/sync` - Push with pre-commit checks
 - `./tools/doc-commit` - Commit documentation
 
+**GitHub:**
+- `./tools/gh` - GitHub CLI wrapper (auto token injection + logging)
+- `./tools/gh-pr` - PR operations (list, create, merge, etc.)
+- `./tools/gh-release` - Release operations (list, create, view)
+- `./tools/gh-api` - API operations (REST and GraphQL)
+
 ## Tool Output Standard
 
 **All `./tools/*` must follow this output format to minimize context window usage.**
@@ -228,6 +234,18 @@ When you start a session, the SessionStart hook automatically displays:
 
 **Best Practice:** Save context proactively throughout the session, not reactively at the end.
 
+### Greeting with Context
+
+**When session context is restored, lead with it.** Don't give a generic greeting - acknowledge where you left off.
+
+**Good:**
+> "Welcome back! Last session we fixed the principal detection bug (committed 049f26e). You were testing the fix. How did it go?"
+
+**Bad:**
+> "Hi! I'm the captain agent. How can I help you today?"
+
+The restored context tells you what the user was working on. Use it to provide continuity.
+
 ## Secrets
 
 **CRITICAL: All secrets MUST use the Secret Service. NEVER commit secrets to the codebase.**
@@ -340,6 +358,54 @@ Pre-commit hooks enforce:
 4. Unit tests
 5. Code review checks
 6. API design patterns
+
+### Dependencies
+
+**CRITICAL: All dependencies MUST be tracked. Never add a dependency without documenting it.**
+
+**Turnkey Installation:** The combination of `install.sh` and `myclaude` provides a turnkey installation experience. When run, all dependencies should be auto-installed and the user should be ready to work immediately. This means:
+- `myclaude` auto-installs Python dependencies (from `requirements.txt`) if missing
+- `myclaude` auto-installs Bun runtime if missing
+- `myclaude` auto-installs Node.js dependencies if missing
+- `myclaude` auto-starts the agency-service if not running
+
+When adding a dependency:
+1. **Python** - Add to `requirements.txt` in project root
+2. **Node.js** - Add to `package.json` (use `npm install --save` or `--save-dev`)
+3. **System tools** - Document in README.md Prerequisites section
+4. **Shell utilities** - Check availability with fallbacks or clear error messages
+
+**Before using a dependency in code:**
+- Verify it's already tracked, OR
+- Add it to the appropriate manifest file first
+
+**Error handling for optional dependencies:**
+```bash
+# Good - check and provide helpful error
+if ! python3 -c "import yaml" 2>/dev/null; then
+    echo "Error: pyyaml not installed. Run: pip3 install pyyaml" >&2
+    exit 1
+fi
+
+# Bad - let it fail cryptically
+python3 -c "import yaml; ..."  # User sees "ModuleNotFoundError"
+```
+
+### Bug Fix Policy
+
+**Fix bugs when encountered.** Don't defer bugs to "later" - they accumulate and cause confusion.
+
+When you encounter a bug:
+1. Fix it immediately if it's blocking or quick
+2. Create a BUG-XXXX item if it requires significant work
+3. Document the fix in the relevant KNOWLEDGE.md
+4. Add tests to prevent regression
+
+**Never ignore:**
+- Cryptic error messages (improve them)
+- Missing dependencies (track them)
+- Test pollution (clean it up)
+- Dirty working trees (commit or stash)
 
 ## Work Items
 
@@ -520,6 +586,20 @@ Each pack adds opinionated patterns and enforcement for that ecosystem.
 
 **CRITICAL: When releasing updates to the-agency-starter, you MUST follow the documented release process.**
 
+### Turnkey Principle
+
+**The starter MUST be a complete, turnkey experience.** There are NO "advanced" or "optional" features that get excluded from the starter. Unless explicitly documented as internal-only (e.g., private principal data, work notes), ALL features, documentation, and agents ship with the starter.
+
+When adding new features to the-agency:
+1. Add the feature to `tools/starter-release` sync list
+2. Ensure the feature works out-of-the-box
+3. Include all necessary documentation
+
+**Anti-pattern:** Excluding features because they "seem advanced" or "require extra setup"
+**Correct approach:** Include everything; let users choose what to use
+
+### Release Checklist
+
 Before any starter release:
 ```bash
 # 1. Run full test suite
@@ -560,8 +640,10 @@ For first-time users, try the interactive tour:
 - `claude/docs/TERMINAL-INTEGRATION.md` - iTerm setup and troubleshooting
 - `claude/docs/PERMISSIONS.md` - Permissions model and examples
 - `claude/docs/SECRETS.md` - Complete secrets reference
+- `claude/docs/TESTING.md` - Test service configuration and usage
 - `claude/docs/REPO-RELATIONSHIP.md` - How the-agency and the-agency-starter relate
 - `claude/docs/STARTER-RELEASE-PROCESS.md` - Starter release workflow and tools
+- `claude/docs/CI-TROUBLESHOOTING.md` - CI failure investigation and fixes
 
 ---
 

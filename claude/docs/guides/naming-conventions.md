@@ -41,19 +41,19 @@ claude/
 
 **Format:** `INSTR-{seq}-{principal}-{workstream}-{agent}-{slug}.md`
 
-Example: `INSTR-0001-alice-web-frontend-implement-dark-mode.md`
+Example: `INSTR-0001-jordan-web-web-implement-dark-mode.md`
 
 ## Artifact Naming
 
 **Format:** `ART-{seq}-{principal}-{workstream}-{agent}-{date}-{slug}.md`
 
-Example: `ART-0001-alice-web-frontend-2026-01-01-implementation-report.md`
+Example: `ART-0001-jordan-web-web-2026-01-01-implementation-report.md`
 
 ## Collaboration Naming
 
 **Format:** `FROM-{source-workstream}-{source-agent}-COLLABORATE-{seq}-{date}.md`
 
-Example: `FROM-housekeeping-captain-COLLABORATE-0001-2026-01-01.md`
+Example: `FROM-housekeeping-housekeeping-COLLABORATE-0001-2026-01-01.md`
 
 ## Agent & Workstream Names
 
@@ -61,7 +61,7 @@ Example: `FROM-housekeeping-captain-COLLABORATE-0001-2026-01-01.md`
 | ---------- | ------------------- | ---------------- |
 | Agent      | lowercase-hyphen    | `agent-manager`  |
 | Workstream | lowercase           | `agents`         |
-| Principal  | lowercase           | `alice`          |
+| Principal  | lowercase           | `jordan`         |
 
 ## Versioning
 

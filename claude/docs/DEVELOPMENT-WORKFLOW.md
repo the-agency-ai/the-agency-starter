@@ -14,7 +14,7 @@ Implementation → Code Review + Security Review → Test Review → Complete
    TAG                 TAG                         TAG
 ```
 
-## Example: REQUEST-alice-0065
+## Example: REQUEST-jordan-0065
 
 ### Phase 1: Implementation
 
@@ -28,7 +28,7 @@ Implementation → Code Review + Security Review → Test Review → Complete
 
 # 3. Commit using the commit tool
 ./tools/commit "add Red-Green development cycle docs" \
-  --work-item REQUEST-alice-0065 \
+  --work-item REQUEST-jordan-0065 \
   --stage impl \
   --body "Updated CLAUDE.md with explicit workflow documentation including:
 - Multi-agent review process (2+ code, 1+ security, 2+ test)
@@ -36,7 +36,7 @@ Implementation → Code Review + Security Review → Test Review → Complete
 - Code review process clarification"
 
 # 4. Tag implementation complete
-./tools/tag REQUEST-alice-0065 impl
+./tools/tag REQUEST-jordan-0065 impl
 ```
 
 ### Phase 2: Code Review + Security Review
@@ -46,7 +46,7 @@ Implementation → Code Review + Security Review → Test Review → Complete
 # In Claude Code, use Task tool with subagent_type="general-purpose"
 
 # Subagent 1 prompt:
-"Review the code changes in REQUEST-alice-0065. Focus on:
+"Review the code changes in REQUEST-jordan-0065. Focus on:
 - Code quality and maintainability
 - Error handling
 - API design patterns
@@ -54,7 +54,7 @@ Implementation → Code Review + Security Review → Test Review → Complete
 Return a numbered list of issues with file:line references."
 
 # Subagent 2 prompt:
-"Review the code changes in REQUEST-alice-0065. Focus on:
+"Review the code changes in REQUEST-jordan-0065. Focus on:
 - Architecture and design patterns
 - Code organization
 - Documentation completeness
@@ -64,7 +64,7 @@ Return a numbered list of issues with file:line references."
 # 2. Spawn security review subagent (1+)
 
 # Security subagent prompt:
-"Security review of REQUEST-alice-0065 changes. Check for:
+"Security review of REQUEST-jordan-0065 changes. Check for:
 - Input validation vulnerabilities
 - Injection risks (SQL, command, XSS)
 - Authentication/authorization issues
@@ -87,7 +87,7 @@ Return findings with severity (Critical/High/Medium/Low) and CWE IDs."
 
 # 7. Commit using the commit tool
 ./tools/commit "apply code review findings" \
-  --work-item REQUEST-alice-0065 \
+  --work-item REQUEST-jordan-0065 \
   --stage review \
   --body "Applied consolidated review findings:
 - Fixed issue 1: description
@@ -95,7 +95,7 @@ Return findings with severity (Critical/High/Medium/Low) and CWE IDs."
 - Security fix: description"
 
 # 8. Tag review complete
-./tools/tag REQUEST-alice-0065 review
+./tools/tag REQUEST-jordan-0065 review
 ```
 
 ### Phase 3: Test Review
@@ -104,7 +104,7 @@ Return findings with severity (Critical/High/Medium/Low) and CWE IDs."
 # 1. Spawn test review subagents (2+ parallel)
 
 # Test review subagent 1 prompt:
-"Review tests for REQUEST-alice-0065. Identify:
+"Review tests for REQUEST-jordan-0065. Identify:
 - Missing test cases for new functionality
 - Edge cases not covered
 - Error scenarios not tested
@@ -112,7 +112,7 @@ Return findings with severity (Critical/High/Medium/Low) and CWE IDs."
 Return a list of tests to add with descriptions."
 
 # Test review subagent 2 prompt:
-"Review tests for REQUEST-alice-0065. Focus on:
+"Review tests for REQUEST-jordan-0065. Focus on:
 - Security test coverage (injection, auth, validation)
 - Boundary condition tests
 - Negative test cases
@@ -134,7 +134,7 @@ Return a list of test improvements needed."
 
 # 6. Commit using the commit tool
 ./tools/commit "add tests from review findings" \
-  --work-item REQUEST-alice-0065 \
+  --work-item REQUEST-jordan-0065 \
   --stage tests \
   --body "Added tests from consolidated test review:
 - Test 1: description
@@ -142,14 +142,14 @@ Return a list of test improvements needed."
 - Test 3: edge case coverage"
 
 # 7. Tag tests complete
-./tools/tag REQUEST-alice-0065 tests
+./tools/tag REQUEST-jordan-0065 tests
 ```
 
 ### Phase 4: Complete
 
 ```bash
 # Tag work item complete (no commit needed)
-./tools/tag REQUEST-alice-0065 complete
+./tools/tag REQUEST-jordan-0065 complete
 
 # If this is a release point:
 ./tools/release 1.3.0 --push --github
@@ -180,15 +180,15 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 **Examples:**
 ```
-REQUEST-alice-0065 - housekeeping/captain for alice: add Red-Green workflow docs
-SPRINT-web-2026w03 - web/frontend for alice: complete sprint deliverables
+REQUEST-jordan-0065 - housekeeping/captain for jordan: add Red-Green workflow docs
+SPRINT-web-2026w03 - web/frontend for jordan: complete sprint deliverables
 housekeeping/captain: update README formatting
 ```
 
 **Using ./tools/commit:**
 ```bash
 # With work item
-./tools/commit "add Red-Green workflow docs" --work-item REQUEST-alice-0065 --stage impl
+./tools/commit "add Red-Green workflow docs" --work-item REQUEST-jordan-0065 --stage impl
 
 # With body
 ./tools/commit "fix path traversal" --work-item BUG-0042 --stage review \

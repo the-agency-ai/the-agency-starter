@@ -41,8 +41,7 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }  # Always show errors
 log_step() { [[ "$VERBOSE" == "true" ]] && echo -e "${BLUE}[STEP]${NC} $1" || true; }
 verbose_echo() { [[ "$VERBOSE" == "true" ]] && echo "$@" || true; }
 
-# Configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Configuration (SCRIPT_DIR already set above for log helper)
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Starter is now a sibling repo, not a subdirectory
 STARTER_DIR="$(cd "$PROJECT_ROOT/../the-agency-starter" 2>/dev/null && pwd)"
@@ -57,6 +56,8 @@ DRY_RUN=false
 SYNC_ONLY=false
 VERBOSE=false
 BUILD_BENCH=false
+PUSH=false
+GITHUB_RELEASE=false
 VERSION_ARG=""
 
 for arg in "$@"; do
@@ -72,6 +73,12 @@ for arg in "$@"; do
             ;;
         --build-bench)
             BUILD_BENCH=true
+            ;;
+        --push)
+            PUSH=true
+            ;;
+        --github)
+            GITHUB_RELEASE=true
             ;;
         --version|-v)
             echo "starter-release $TOOL_VERSION"
@@ -93,6 +100,8 @@ for arg in "$@"; do
             echo "Options:"
             echo "  --sync-only, -s  Sync files only (no version, commit, or tag)"
             echo "  --build-bench    Build AgencyBench and include DMG in release"
+            echo "  --push           Push to remote after release"
+            echo "  --github         Create GitHub release (requires gh CLI)"
             echo "  --dry-run, -n    Show what would happen without making changes"
             echo "  --verbose        Show detailed output"
             echo "  --version, -v    Show tool version"
@@ -137,6 +146,16 @@ bump_version() {
     esac
 }
 
+# Validate version string format
+validate_version() {
+    local version="$1"
+    if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        log_error "Invalid version format: $version (expected X.Y.Z)"
+        return 1
+    fi
+    return 0
+}
+
 # Sync files from the-agency to starter
 sync_files() {
     log_step "Syncing files to the-agency-starter..."
@@ -159,18 +178,28 @@ sync_files() {
         "claude/agents/captain/WORKLOG.md"
         "claude/agents/captain/ADHOC-WORKLOG.md"
         "claude/config"
-        "claude/docs/TERMINAL-INTEGRATION.md"
-        "claude/docs/PERMISSIONS.md"
-        "claude/docs/SECRETS.md"
-        "claude/docs/REPO-RELATIONSHIP.md"
+        "claude/docs/AGENT-SDK.md"
+        "claude/docs/BROWSER-MCP.md"
+        "claude/docs/CI-TROUBLESHOOTING.md"
+        "claude/docs/CONCEPTS.md"
+        "claude/docs/DEVELOPMENT-WORKFLOW.md"
         "claude/docs/FIRST-LAUNCH.md"
         "claude/docs/FIRST-LAUNCH-CONTEXT.jsonl"
+        "claude/docs/INDEX.md"
+        "claude/docs/PERMISSIONS.md"
+        "claude/docs/PRINCIPALS.md"
+        "claude/docs/QUICK-START.md"
+        "claude/docs/REPO-RELATIONSHIP.md"
+        "claude/docs/SECRETS.md"
         "claude/docs/STARTER-PACK-INTEGRATION.md"
         "claude/docs/STARTER-RELEASE-PROCESS.md"
-        "claude/docs/QUICK-START.md"
-        "claude/docs/INDEX.md"
+        "claude/docs/TERMINAL-INTEGRATION.md"
+        "claude/docs/TESTING.md"
+        "claude/docs/TOOL-LOGGING-PATTERN.md"
         "claude/docs/cookbooks"
+        "claude/docs/guides"
         "claude/docs/tutorials"
+        "claude/agents/browser"
         "claude/integrations"
         "claude/knowledge"
         "claude/templates"
@@ -214,6 +243,18 @@ sync_files() {
     touch "$STARTER_DIR/claude/data/.gitkeep"
     touch "$STARTER_DIR/claude/logs/.gitkeep"
 
+    # Sync GitHub workflows (copy starter-*.yml as *.yml)
+    log_step "Syncing GitHub workflows..."
+    mkdir -p "$STARTER_DIR/.github/workflows"
+    for workflow in "$PROJECT_ROOT/.github/workflows/starter-"*.yml; do
+        if [[ -f "$workflow" ]]; then
+            local basename
+            basename=$(basename "$workflow" | sed 's/^starter-//')
+            cp "$workflow" "$STARTER_DIR/.github/workflows/$basename"
+            verbose_echo "  Synced workflow: $basename"
+        fi
+    done
+
     # Clean up sensitive content that might have been synced
     log_step "Cleaning sensitive content..."
     rm -rf "$STARTER_DIR/claude/agents/captain/SESSION-"* 2>/dev/null || true
@@ -231,14 +272,25 @@ sync_files() {
     # Remove proposals if they exist (development-only content)
     rm -rf "$STARTER_DIR/claude/proposals" 2>/dev/null || true
 
-    # Remove project-specific agent directories (only captain should be in starter)
-    # Keep captain, collaboration, remove any others
+    # Remove project-specific agent directories
+    # Keep: captain, collaboration, browser (shipped with starter)
     for agent_dir in "$STARTER_DIR/claude/agents"/*; do
         if [[ -d "$agent_dir" ]]; then
             local agent_name=$(basename "$agent_dir")
-            if [[ "$agent_name" != "captain" && "$agent_name" != "collaboration" ]]; then
+            if [[ "$agent_name" != "captain" && "$agent_name" != "collaboration" && "$agent_name" != "browser" ]]; then
                 rm -rf "$agent_dir"
                 verbose_echo "  Removed project-specific agent: $agent_name"
+            fi
+        fi
+    done
+
+    # Remove project-specific design systems (keep only _template)
+    for ds_dir in "$STARTER_DIR/claude/knowledge/design-systems"/*; do
+        if [[ -d "$ds_dir" ]]; then
+            local ds_name=$(basename "$ds_dir")
+            if [[ "$ds_name" != "_template" ]]; then
+                rm -rf "$ds_dir"
+                verbose_echo "  Removed project-specific design system: $ds_name"
             fi
         fi
     done
@@ -263,6 +315,10 @@ clean_cruft() {
     rm -f "$STARTER_DIR/history/push-log.md" 2>/dev/null || true
     rm -f "$STARTER_DIR/history/releases.md" 2>/dev/null || true
 
+    # Remove internal planning/work note docs
+    rm -f "$STARTER_DIR/claude/docs/EXTRACTION_PLAN.md" 2>/dev/null || true
+    rm -f "$STARTER_DIR/claude/docs/WORKNOTE-"*.md 2>/dev/null || true
+
     # Clean build artifacts from apps (but keep source)
     rm -rf "$STARTER_DIR/source/apps/agency-bench/src-tauri/target" 2>/dev/null || true
     rm -rf "$STARTER_DIR/source/apps/agency-bench/.next" 2>/dev/null || true
@@ -274,8 +330,9 @@ clean_cruft() {
 
     # Scrub sensitive identifiers from config if synced
     if [[ -f "$STARTER_DIR/claude/config/agency.yaml" ]]; then
-        # Remove jdm: jordan line if present
-        sed -i '' '/jdm: jordan/d' "$STARTER_DIR/claude/config/agency.yaml" 2>/dev/null || true
+        # Remove jdm: jordan line if present (cross-platform sed)
+        local config_file="$STARTER_DIR/claude/config/agency.yaml"
+        grep -v 'jdm: jordan' "$config_file" > "${config_file}.tmp" 2>/dev/null && mv "${config_file}.tmp" "$config_file" || true
     fi
 
     echo "  Cleaned cruft"
@@ -318,6 +375,8 @@ verify_build() {
     local required_files=(
         ".claude/settings.json"
         ".claude/settings.local.json.example"
+        ".github/workflows/release.yml"
+        ".github/workflows/verify.yml"
         ".gitignore"
         "CLAUDE.md"
         "README.md"
@@ -365,14 +424,14 @@ verify_build() {
     else
         # Fallback to comprehensive grep patterns if scanner not available
         local secret_patterns=(
-            "GUMROAD_[A-Z_]*=[A-Za-z0-9_-]\\{20,\\}"
-            "sk-ant-[A-Za-z0-9_-]\\{20,\\}"
-            "ghp_[A-Za-z0-9]\\{36\\}"
-            "gho_[A-Za-z0-9]\\{36\\}"
+            "GUMROAD_[A-Z_]*=[A-Za-z0-9_-]{20,}"
+            "sk-ant-[A-Za-z0-9_-]{20,}"
+            "ghp_[A-Za-z0-9]{36}"
+            "gho_[A-Za-z0-9]{36}"
             "ANTHROPIC_API_KEY"
             "OPENAI_API_KEY"
-            "client_secret.*=.*[A-Za-z0-9_-]\\{20,\\}"
-            "access_token.*=.*[A-Za-z0-9_-]\\{20,\\}"
+            "client_secret.*=.*[A-Za-z0-9_-]{20,}"
+            "access_token.*=.*[A-Za-z0-9_-]{20,}"
             "-----BEGIN.*PRIVATE KEY-----"
         )
         local found_secrets=false
@@ -499,6 +558,61 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
     cd "$PROJECT_ROOT"
 }
 
+# Push to remote
+push_release() {
+    local version="$1"
+
+    log_step "Pushing to remote..."
+
+    cd "$STARTER_DIR"
+
+    # Push main branch
+    if git push origin main; then
+        echo "  Pushed: main"
+    else
+        log_error "Failed to push main branch"
+        cd "$PROJECT_ROOT"
+        return 1
+    fi
+
+    # Push tag
+    if git push origin "v$version"; then
+        echo "  Pushed: v$version"
+    else
+        log_error "Failed to push tag v$version"
+        cd "$PROJECT_ROOT"
+        return 1
+    fi
+
+    cd "$PROJECT_ROOT"
+}
+
+# Create GitHub release
+create_github_release() {
+    local version="$1"
+
+    log_step "Creating GitHub release..."
+
+    # Check if gh CLI is available
+    if ! command -v gh &> /dev/null; then
+        log_error "GitHub CLI (gh) not found. Install with: brew install gh"
+        return 1
+    fi
+
+    cd "$STARTER_DIR"
+
+    # Create release with auto-generated notes
+    if gh release create "v$version" --generate-notes --title "v$version"; then
+        echo "  Created GitHub release: v$version"
+    else
+        log_error "Failed to create GitHub release"
+        cd "$PROJECT_ROOT"
+        return 1
+    fi
+
+    cd "$PROJECT_ROOT"
+}
+
 # Main
 main() {
     # Trap unexpected exits
@@ -563,6 +677,13 @@ main() {
         new_version=$(bump_version "$current_version" "$VERSION_ARG")
     fi
 
+    # Validate version format
+    if ! validate_version "$new_version"; then
+        trap - EXIT
+        log_end "$RUN_ID" "failure" 1 0 "Invalid version format"
+        exit 1
+    fi
+
     log_info "Current version: $current_version"
     log_info "New version: $new_version"
     echo ""
@@ -580,6 +701,12 @@ main() {
         log_step "Would update VERSION to $new_version..."
         log_step "Would update CHANGELOG.md..."
         log_step "Would commit and tag as v$new_version..."
+        if [[ "$PUSH" == "true" ]]; then
+            log_step "Would push to origin (main + v$new_version)..."
+        fi
+        if [[ "$GITHUB_RELEASE" == "true" ]]; then
+            log_step "Would create GitHub release v$new_version..."
+        fi
 
         echo ""
         log_info "Dry run complete. Run without --dry-run to execute."
@@ -616,16 +743,37 @@ main() {
     commit_and_tag "$new_version"
     echo ""
 
+    # Push if requested
+    if [[ "$PUSH" == "true" ]]; then
+        push_release "$new_version"
+        echo ""
+    fi
+
+    # Create GitHub release if requested
+    if [[ "$GITHUB_RELEASE" == "true" ]]; then
+        create_github_release "$new_version"
+        echo ""
+    fi
+
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     log_info "Release complete: v$new_version"
     echo ""
-    echo "Next steps (in starter repo):"
-    echo "  cd $STARTER_DIR"
-    echo "  git push origin main"
-    echo "  git push origin v$new_version"
-    echo ""
-    echo "Or create GitHub release:"
-    echo "  gh release create v$new_version --generate-notes"
+
+    if [[ "$PUSH" == "true" && "$GITHUB_RELEASE" == "true" ]]; then
+        echo "Release published to GitHub!"
+        echo "  https://github.com/the-agency-ai/the-agency-starter/releases/tag/v$new_version"
+    elif [[ "$PUSH" == "true" ]]; then
+        echo "Pushed to remote. Create GitHub release with:"
+        echo "  gh release create v$new_version --generate-notes"
+    else
+        echo "Next steps (in starter repo):"
+        echo "  cd $STARTER_DIR"
+        echo "  git push origin main"
+        echo "  git push origin v$new_version"
+        echo ""
+        echo "Or use --push --github to automate:"
+        echo "  ./tools/starter-release $VERSION_ARG --push --github"
+    fi
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     trap - EXIT  # Clear trap
