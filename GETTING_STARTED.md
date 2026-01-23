@@ -153,7 +153,7 @@ When it starts, it will:
 Workstreams organize related work. Have housekeeping create one, or do it yourself:
 
 ```bash
-./tools/create-workstream web "Web Application"
+./tools/workstream-create web "Web Application"
 ```
 
 This creates:
@@ -169,7 +169,7 @@ claude/workstreams/web/
 Agents are specialized Claude instances. Create one for your web work:
 
 ```bash
-./tools/create-agent web web
+./tools/agent-create web web
 ```
 
 This creates:
@@ -401,8 +401,8 @@ As your project grows, add specialized agents:
 
 For larger initiatives:
 ```bash
-./tools/create-epic 1          # Create epic001
-./tools/create-sprint web 1 1  # Create web/epic001/sprint001
+./tools/epic-create 1          # Create epic001
+./tools/sprint-create web 1 1  # Create web/epic001/sprint001
 ```
 
 ### Check the Docs
@@ -422,8 +422,8 @@ For larger initiatives:
 ./tools/myclaude {workstream} {agent}
 
 # Create things
-./tools/create-workstream {name} "{description}"
-./tools/create-agent {workstream} {name}
+./tools/workstream-create {name} "{description}"
+./tools/agent-create {workstream} {name}
 ./tools/capture-instruction -t "Title" "Content"
 
 # Collaboration
